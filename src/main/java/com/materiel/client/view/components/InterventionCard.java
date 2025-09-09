@@ -13,6 +13,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -44,6 +46,8 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     private static final Font DETAIL_FONT = new Font("Segoe UI", Font.PLAIN, 10);
     private static final Font TIME_FONT = new Font("Segoe UI", Font.BOLD, 10);
     
+    private static final Logger log = LoggerFactory.getLogger(InterventionCard.class);
+
     public InterventionCard(Intervention intervention) {
         this.intervention = intervention;
         initComponents();
@@ -329,8 +333,10 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             }
             if (e.getY() < 20) {
                 adjustStartTime(e.getWheelRotation());
+                e.consume();
             } else if (e.getY() > getHeight() - 20) {
                 adjustEndTime(e.getWheelRotation());
+                e.consume();
             }
         });
 
@@ -369,6 +375,10 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         }
     }
 
+    /**
+     * Ajuste l'heure de début de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
     private void adjustStartTime(int wheelRotation) {
         LocalDateTime start = intervention.getDateDebut().plusMinutes(wheelRotation * 15);
         if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
@@ -377,6 +387,10 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         }
     }
 
+    /**
+     * Ajuste l'heure de fin de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
     private void adjustEndTime(int wheelRotation) {
         LocalDateTime end = intervention.getDateFin().plusMinutes(wheelRotation * 15);
         if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
@@ -395,6 +409,8 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             long minutes = Duration.between(intervention.getDateDebut(), intervention.getDateFin()).toMinutes();
             durationLabel.setText("(" + formatDuree(minutes) + ")");
         }
+        revalidate();
+        repaint();
     }
     
     private void updateAppearance() {
@@ -456,7 +472,7 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         } catch (Exception e) {
             dragging = false;
             updateAppearance();
-            e.printStackTrace();
+            log.error("Failed to start drag", e);
         }
     }
 
