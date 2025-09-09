@@ -78,6 +78,7 @@ public class Intervention {
     public String getAdresseIntervention() { return adresseIntervention; }
     public void setAdresseIntervention(String adresseIntervention) { this.adresseIntervention = adresseIntervention; }
     
+    
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     

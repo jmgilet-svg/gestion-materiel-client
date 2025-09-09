@@ -311,12 +311,61 @@ public class MockDataManager {
                     return new ArrayList<>(Arrays.asList(array));
                 }
             }
+        } catch (com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException e) {
+            System.err.println("Données corrompues détectées dans " + filename + ": " + e.getMessage());
+            
+            // Proposer automatiquement la réparation
+            if (handleCorruptedData(filename)) {
+                // Réessayer après réparation
+                return loadFromFile(filename, arrayClass);
+            }
         } catch (IOException e) {
             System.err.println("Erreur lors du chargement de " + filename + ": " + e.getMessage());
             e.printStackTrace();
         }
         
         return new ArrayList<>();
+    }
+    
+    /**
+     * Gère les données corrompues
+     */
+    private boolean handleCorruptedData(String filename) {
+        try {
+            System.out.println("🔧 Tentative de réparation automatique pour " + filename);
+            
+            // Créer une sauvegarde avant réparation
+            Path corruptedFile = dataDirectory.resolve(filename);
+            Path backupFile = dataDirectory.resolve(filename + ".corrupted." + System.currentTimeMillis());
+            
+            if (Files.exists(corruptedFile)) {
+                Files.copy(corruptedFile, backupFile);
+                System.out.println("Sauvegarde créée: " + backupFile.getFileName());
+                
+                // Supprimer le fichier corrompu
+                Files.delete(corruptedFile);
+                System.out.println("Fichier corrompu supprimé: " + filename);
+                
+                // Recréer les données par défaut
+                if (filename.equals(INTERVENTIONS_FILE)) {
+                    saveInterventions(createDefaultInterventions());
+                } else if (filename.equals(RESOURCES_FILE)) {
+                    saveResources(createDefaultResources());
+                } else if (filename.equals(CLIENTS_FILE)) {
+                    saveClients(createDefaultClients());
+                } else if (filename.equals(DEVIS_FILE)) {
+                    saveDevis(createDefaultDevis());
+                }
+                
+                System.out.println("✅ Données par défaut recréées pour " + filename);
+                return true;
+            }
+            
+        } catch (IOException e) {
+            System.err.println("Erreur lors de la réparation de " + filename + ": " + e.getMessage());
+        }
+        
+        return false;
     }
     
     private <T> void saveToFile(String filename, List<T> data) {

@@ -212,12 +212,9 @@ public class DevisListPanel extends JPanel {
     private void loadData() {
         SwingUtilities.invokeLater(() -> {
             try {
-                // TODO: Implémenter DevisService
-                // DevisService devisService = ServiceFactory.getDevisService();
-                // devisList = devisService.getAllDevis();
+                DevisService devisService = ServiceFactory.getDevisService();
+                devisList = devisService.getAllDevis();
                 
-                // Données de démonstration
-                devisList = createSampleDevis();
                 
                 tableModel.fireTableDataChanged();
             } catch (Exception e) {
@@ -241,14 +238,22 @@ public class DevisListPanel extends JPanel {
         loadData();
     }
     
+
     private void filterDevis() {
         String searchText = searchField.getText().toLowerCase().trim();
         
         if (searchText.isEmpty()) {
             loadData();
         } else {
-            // TODO: Implémenter le filtrage
-            tableModel.fireTableDataChanged();
+            try {
+                DevisService devisService = ServiceFactory.getDevisService();
+                devisList = devisService.searchDevis(searchText);
+                tableModel.fireTableDataChanged();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                    "Erreur lors de la recherche: " + e.getMessage(),
+                    "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     

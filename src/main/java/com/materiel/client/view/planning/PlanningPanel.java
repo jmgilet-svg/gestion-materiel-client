@@ -10,6 +10,7 @@ import com.materiel.client.service.InterventionService;
 import com.materiel.client.view.components.ResourceCard;
 import com.materiel.client.view.components.InterventionCard;
 import com.materiel.client.view.planning.InterventionCreateDialog;
+import com.materiel.client.view.resources.ResourceEditDialog;
 
 import javax.swing.*;
 import java.awt.*;
@@ -404,8 +405,27 @@ public class PlanningPanel extends JPanel {
     }
     
     private void showAddResourceDialog() {
-        // TODO: Implémenter le dialogue d'ajout de ressource
-        JOptionPane.showMessageDialog(this, "Dialogue d'ajout de ressource à implémenter");
+        ResourceEditDialog dialog = new ResourceEditDialog((Frame) SwingUtilities.getWindowAncestor(this), null);
+        dialog.setVisible(true);
+        
+        if (dialog.isConfirmed()) {
+            try {
+                Resource newResource = dialog.getResource();
+                ResourceService resourceService = ServiceFactory.getResourceService();
+                resourceService.saveResource(newResource);
+                
+                // Rafraîchir le planning pour inclure la nouvelle ressource
+                refreshPlanning();
+                
+                JOptionPane.showMessageDialog(this,
+                    "Ressource créée avec succès !",
+                    "Succès", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                    "Erreur lors de la création de la ressource: " + e.getMessage(),
+                    "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
     
     private LocalDate getStartOfWeek(LocalDate date) {
@@ -621,9 +641,8 @@ public class PlanningPanel extends JPanel {
         private void createNewIntervention(LocalDate date, Resource resource) {
             // Afficher le dialogue de création d'intervention
             InterventionCreateDialog dialog = new InterventionCreateDialog(
-                (Frame) SwingUtilities.getWindowAncestor(PlanningPanel.this), 
-                date, 
-                resource
+                (Frame) SwingUtilities.getWindowAncestor(PlanningPanel.this), resource,
+                date.atStartOfDay(), date.atStartOfDay(), false
             );
             dialog.setVisible(true);
             

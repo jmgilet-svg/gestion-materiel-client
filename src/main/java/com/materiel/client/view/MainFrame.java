@@ -23,6 +23,8 @@ import com.materiel.client.view.components.SideMenuPanel;
 import com.materiel.client.view.components.StatusBarPanel;
 import com.materiel.client.view.devis.DevisListPanel;
 import com.materiel.client.view.planning.PlanningPanel;
+import com.materiel.client.view.clients.ClientListPanel;
+import com.materiel.client.view.resources.ResourceListPanel;
 
 /**
  * Fenêtre principale de l'application
@@ -36,7 +38,9 @@ public class MainFrame extends JFrame {
     // Panels de contenu
     private PlanningPanel planningPanel;
     private DevisListPanel devisListPanel;
-    // TODO: Ajouter autres panels (Commandes, BL, Factures, etc.)
+    private ClientListPanel clientListPanel;
+    private ResourceListPanel resourceListPanel;
+    // TODO: Ajouter autres panels (Commandes, BL, Factures)
     
     public MainFrame() {
         initComponents();
@@ -74,9 +78,13 @@ public class MainFrame extends JFrame {
     private void initContentPanels() {
         planningPanel = new PlanningPanel();
         devisListPanel = new DevisListPanel();
+        clientListPanel = new ClientListPanel();
+        resourceListPanel = new ResourceListPanel();
         
         contentPanel.add(planningPanel, "PLANNING");
         contentPanel.add(devisListPanel, "DEVIS");
+        contentPanel.add(clientListPanel, "CLIENTS");
+        contentPanel.add(resourceListPanel, "RESSOURCES");
         // TODO: Ajouter autres panels
     }
     
@@ -118,18 +126,23 @@ public class MainFrame extends JFrame {
                 break;
             case "COMMANDES":
                 // TODO: Implémenter
+                showNotImplementedMessage("Gestion des Commandes");
                 break;
             case "BONS_LIVRAISON":
                 // TODO: Implémenter
+                showNotImplementedMessage("Gestion des Bons de Livraison");
                 break;
             case "FACTURES":
                 // TODO: Implémenter
+                showNotImplementedMessage("Gestion des Factures");
                 break;
             case "CLIENTS":
-                // TODO: Implémenter
+                cardLayout.show(contentPanel, "CLIENTS");
+                clientListPanel.refreshData();
                 break;
             case "RESSOURCES":
-                // TODO: Implémenter
+                cardLayout.show(contentPanel, "RESSOURCES");
+                resourceListPanel.refreshData();
                 break;
             default:
                 showPlanningPanel();
@@ -140,6 +153,15 @@ public class MainFrame extends JFrame {
         CardLayout cardLayout = (CardLayout) contentPanel.getLayout();
         cardLayout.show(contentPanel, "PLANNING");
         planningPanel.refreshPlanning();
+    }
+    
+    private void showNotImplementedMessage(String feature) {
+        JOptionPane.showMessageDialog(this,
+            "🚧 Fonctionnalité en cours de développement\n\n" +
+            feature + " sera disponible dans une prochaine version.\n" +
+            "L'architecture est prête pour cette extension.",
+            "Prochainement disponible",
+            JOptionPane.INFORMATION_MESSAGE);
     }
     
     private Image createAppIcon() {
@@ -177,9 +199,42 @@ public class MainFrame extends JFrame {
             AppConfig.getInstance().saveConfiguration();
             
             // Nettoyer les ressources
+            EventBus.getInstance().clear();
             dispose();
             System.exit(0);
         }
     }
+    
+    /**
+     * Méthode publique pour rafraîchir la barre de statut
+     */
+    public void refreshStatusBar() {
+        if (statusBarPanel != null) {
+            statusBarPanel.updateStatus();
+        }
+    }
+    
+    /**
+     * Méthode publique pour naviguer vers un panel spécifique
+     */
+    public void navigateToPanel(String panelName) {
+        showPanel(panelName);
+    }
+    
+    /**
+     * Méthode publique pour obtenir le panel actuellement affiché
+     */
+    public String getCurrentPanel() {
+        // Cette méthode pourrait être améliorée pour tracker le panel actuel
+        return "PLANNING"; // Par défaut
+    }
+    
+    /**
+     * Méthode publique pour vérifier si l'application peut être fermée
+     */
+    public boolean canExit() {
+        // Vérifier s'il y a des modifications non sauvegardées
+        // Pour l'instant, toujours autoriser la fermeture
+        return true;
+    }
 }
- 
