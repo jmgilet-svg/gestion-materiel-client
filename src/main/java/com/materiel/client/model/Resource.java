@@ -1,7 +1,5 @@
 package com.materiel.client.model;
 
-import java.time.LocalDateTime;
-
 /**
  * Modèle pour les ressources (grues, camions, etc.)
  */
@@ -61,9 +59,22 @@ public class Resource {
     
     public String getSpecifications() { return specifications; }
     public void setSpecifications(String specifications) { this.specifications = specifications; }
-    
+
     @Override
     public String toString() {
         return nom + " (" + type.getDisplayName() + ")";
     }
-} 
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Resource)) return false;
+        Resource other = (Resource) obj;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+}
