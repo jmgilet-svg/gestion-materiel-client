@@ -5,6 +5,8 @@ import com.materiel.client.model.Resource;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.dnd.*;
+import java.awt.datatransfer.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
@@ -13,12 +15,14 @@ import java.util.stream.Collectors;
 /**
  * Carte d'intervention améliorée avec design riche et informations complètes
  */
-public class InterventionCard extends JPanel {
+public class InterventionCard extends JPanel implements DragGestureListener, DragSourceListener {
     
     private final Intervention intervention;
     private boolean hovered = false;
     private boolean selected = false;
     private boolean highlighted = false; // Pour le feedback DnD
+    private boolean dragging = false;
+    private DragSource dragSource;
     
     // Constantes de design
     private static final Color BACKGROUND_NORMAL = Color.WHITE;
@@ -35,6 +39,7 @@ public class InterventionCard extends JPanel {
         this.intervention = intervention;
         initComponents();
         setupEventHandlers();
+        setupDragAndDrop();
     }
     
     private void initComponents() {
@@ -320,8 +325,12 @@ public class InterventionCard extends JPanel {
         Color backgroundColor;
         Color borderColor;
         int borderWidth;
-        
-        if (highlighted) {
+
+        if (dragging) {
+            backgroundColor = BACKGROUND_HOVER;
+            borderColor = Color.decode("#3B82F6");
+            borderWidth = 2;
+        } else if (highlighted) {
             backgroundColor = BACKGROUND_HIGHLIGHT;
             borderColor = Color.decode("#F59E0B"); // Orange pour highlight DnD
             borderWidth = 3;
@@ -346,6 +355,51 @@ public class InterventionCard extends JPanel {
         ));
         
         repaint();
+    }
+
+    private void setupDragAndDrop() {
+        dragSource = new DragSource();
+        dragSource.createDefaultDragGestureRecognizer(this, DnDConstants.ACTION_MOVE, this);
+    }
+
+    // Implémentation DragGestureListener
+    @Override
+    public void dragGestureRecognized(DragGestureEvent dge) {
+        if (intervention.getId() == null) {
+            return;
+        }
+        dragging = true;
+        updateAppearance();
+
+        String transferData = "INTERVENTION:" + intervention.getId();
+        StringSelection transferable = new StringSelection(transferData);
+
+        try {
+            dragSource.startDrag(dge, DragSource.DefaultMoveDrop, transferable, this);
+        } catch (Exception e) {
+            dragging = false;
+            updateAppearance();
+            e.printStackTrace();
+        }
+    }
+
+    // Implémentation DragSourceListener
+    @Override
+    public void dragEnter(DragSourceDragEvent dsde) { }
+
+    @Override
+    public void dragOver(DragSourceDragEvent dsde) { }
+
+    @Override
+    public void dropActionChanged(DragSourceDragEvent dsde) { }
+
+    @Override
+    public void dragExit(DragSourceEvent dse) { }
+
+    @Override
+    public void dragDropEnd(DragSourceDropEvent dsde) {
+        dragging = false;
+        updateAppearance();
     }
     
     /**
