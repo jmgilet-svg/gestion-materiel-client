@@ -7,7 +7,8 @@ Application desktop moderne en Java Swing pour la gestion de matériel et réser
 ### 🎯 Fonctionnalités Principales
 
 - **Planning hebdomadaire interactif** avec drag & drop des ressources
-- **Gestion complète des devis** avec workflow Devis → Commande → BL → Facture  
+- **Vue calendrier jour avec timeline** pour visualiser les interventions d'une journée
+- **Gestion complète des devis** avec workflow Devis → Commande → BL → Facture
 - **Interface moderne** avec FlatLaf Light et palette de couleurs cohérente
 - **Mode dual** : Backend API Spring Boot ou Mock JSON persisté
 - **Raccourcis clavier** : Suppr (supprimer), Ctrl+D (dupliquer)

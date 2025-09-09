@@ -19,6 +19,7 @@ import java.awt.datatransfer.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -32,10 +33,13 @@ public class PlanningPanel extends JPanel {
     private static final int RESOURCE_PANEL_WIDTH = 200;
     private static final int DAY_COLUMN_WIDTH = 180;
     private static final int HOUR_ROW_HEIGHT = 80;
-    
+
     private JPanel resourceListPanel;
     private JPanel planningGridPanel;
     private JScrollPane planningScrollPane;
+    private CardLayout viewLayout;
+    private JPanel viewContainer;
+    private DayTimelinePanel dayTimelinePanel;
     private LocalDate currentWeekStart;
     private JLabel weekLabel; // Référence pour la mise à jour
     
@@ -68,9 +72,19 @@ public class PlanningPanel extends JPanel {
         // Liste des ressources à gauche
         resourceListPanel = createResourceListPanel();
         
-        // Grid de planning
+        // Conteneur de vue avec CardLayout (semaine/jour)
+        viewLayout = new CardLayout();
+        viewContainer = new JPanel(viewLayout);
+
+        // Vue semaine existante
         planningGridPanel = createPlanningGridPanel();
-        planningScrollPane = new JScrollPane(planningGridPanel);
+        viewContainer.add(planningGridPanel, "WEEK");
+
+        // Vue jour timeline (initialisée vide, se mettra à jour après chargement)
+        dayTimelinePanel = new DayTimelinePanel(LocalDate.now(), interventions);
+        viewContainer.add(new JScrollPane(dayTimelinePanel), "DAY");
+
+        planningScrollPane = new JScrollPane(viewContainer);
         planningScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         planningScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         
@@ -97,14 +111,16 @@ public class PlanningPanel extends JPanel {
         JButton prevWeekBtn = new JButton("← Semaine précédente");
         JButton nextWeekBtn = new JButton("Semaine suivante →");
         JButton todayBtn = new JButton("Aujourd'hui");
-        
+        JToggleButton dayViewToggle = new JToggleButton("Vue jour");
+
         prevWeekBtn.addActionListener(e -> navigateWeek(-1));
         nextWeekBtn.addActionListener(e -> navigateWeek(1));
         todayBtn.addActionListener(e -> goToToday());
-        
+        dayViewToggle.addActionListener(e -> toggleDayView(dayViewToggle.isSelected()));
+
         weekLabel = new JLabel(formatWeekRange());
         weekLabel.setFont(weekLabel.getFont().deriveFont(Font.BOLD, 16f));
-        
+
         navigationPanel.add(prevWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(10));
         navigationPanel.add(weekLabel);
@@ -112,6 +128,8 @@ public class PlanningPanel extends JPanel {
         navigationPanel.add(nextWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(20));
         navigationPanel.add(todayBtn);
+        navigationPanel.add(Box.createHorizontalStrut(10));
+        navigationPanel.add(dayViewToggle);
         
         // Actions
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -337,7 +355,7 @@ public class PlanningPanel extends JPanel {
                 if (!interventionDate.isBefore(currentWeekStart) && 
                     !interventionDate.isAfter(currentWeekStart.plusDays(6))) {
                     
-                    int dayIndex = (int) currentWeekStart.until(interventionDate).getDays();
+                    int dayIndex = (int) ChronoUnit.DAYS.between(currentWeekStart, interventionDate);
                     
                     // Ajouter l'intervention à toutes les cellules des ressources impliquées
                     for (Resource resource : intervention.getRessources()) {
@@ -356,6 +374,11 @@ public class PlanningPanel extends JPanel {
         
         // Détecter et afficher les conflits
         detectAndHighlightConflicts();
+
+        // Mettre à jour la vue jour
+        if (dayTimelinePanel != null) {
+            dayTimelinePanel.setDate(LocalDate.now(), interventions);
+        }
     }
     
     private void detectAndHighlightConflicts() {
@@ -387,7 +410,7 @@ public class PlanningPanel extends JPanel {
             if (!interventionDate.isBefore(currentWeekStart) && 
                 !interventionDate.isAfter(currentWeekStart.plusDays(6))) {
                 
-                int dayIndex = (int) currentWeekStart.until(interventionDate).getDays();
+                int dayIndex = (int) ChronoUnit.DAYS.between(currentWeekStart, interventionDate);
                 
                 for (Resource resource : intervention.getRessources()) {
                     int resourceIndex = resources.indexOf(resource);
@@ -417,6 +440,15 @@ public class PlanningPanel extends JPanel {
         currentWeekStart = getStartOfWeek(LocalDate.now());
         updateWeekDisplay();
         loadData();
+    }
+
+    private void toggleDayView(boolean dayView) {
+        if (dayView) {
+            dayTimelinePanel.setDate(LocalDate.now(), interventions);
+            viewLayout.show(viewContainer, "DAY");
+        } else {
+            viewLayout.show(viewContainer, "WEEK");
+        }
     }
     
     private void updateWeekDisplay() {
@@ -584,12 +616,19 @@ public class PlanningPanel extends JPanel {
                     String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
                     System.out.println("🔧 DEBUG: Données reçues: " + data);
                     
-                    // Parser les données : "RESOURCE:id:nom:type"
+                    // Parser les données : "RESOURCE:id:nom:type" ou "INTERVENTION:id"
                     String[] parts = data.split(":");
-                    if (parts.length >= 3 && "RESOURCE".equals(parts[0])) {
+                    if (parts.length >= 2 && "INTERVENTION".equals(parts[0])) {
+                        Long interventionId = Long.parseLong(parts[1]);
+                        System.out.println("🔧 DEBUG: Tentative de déplacement pour intervention ID: " + interventionId);
+
+                        handleInterventionDrop(interventionId);
+                        dtde.getDropTargetContext().dropComplete(true);
+                        System.out.println("✅ Intervention déplacée avec succès");
+                    } else if (parts.length >= 3 && "RESOURCE".equals(parts[0])) {
                         Long resourceId = Long.parseLong(parts[1]);
                         System.out.println("🔧 DEBUG: Tentative de drop pour ressource ID: " + resourceId);
-                        
+
                         handleResourceDrop(resourceId);
                         dtde.getDropTargetContext().dropComplete(true);
                         System.out.println("✅ Drop traité avec succès");
@@ -649,6 +688,48 @@ public class PlanningPanel extends JPanel {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la création de l'intervention: " + e.getMessage(),
+                        "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+        }
+
+        private void handleInterventionDrop(Long interventionId) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    System.out.println("🔧 DEBUG: Déplacement de l'intervention ID: " + interventionId);
+
+                    Intervention movedIntervention = interventions.stream()
+                            .filter(i -> i.getId().equals(interventionId))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (movedIntervention == null) {
+                        System.err.println("🔧 ERROR: Intervention non trouvée avec ID: " + interventionId);
+                        JOptionPane.showMessageDialog(PlanningPanel.this,
+                            "Intervention non trouvée", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    LocalDate targetDate = targetCell.getDate();
+                    LocalDateTime newStart = LocalDateTime.of(targetDate, movedIntervention.getDateDebut().toLocalTime());
+                    LocalDateTime newEnd = LocalDateTime.of(targetDate, movedIntervention.getDateFin().toLocalTime());
+
+                    movedIntervention.setDateDebut(newStart);
+                    movedIntervention.setDateFin(newEnd);
+
+                    InterventionService interventionService = ServiceFactory.getInterventionService();
+                    interventionService.saveIntervention(movedIntervention);
+
+                    refreshPlanning();
+
+                    JOptionPane.showMessageDialog(PlanningPanel.this,
+                        "Intervention déplacée au " + targetDate,
+                        "Succès", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    System.err.println("🔧 ERROR: Erreur déplacement intervention: " + e.getMessage());
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(PlanningPanel.this,
+                        "Erreur lors du déplacement: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             });
