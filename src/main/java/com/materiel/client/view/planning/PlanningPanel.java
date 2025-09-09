@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
+
 /**
  * Panel principal du planning hebdomadaire avec drag & drop intelligent
  */
@@ -142,6 +143,7 @@ public class PlanningPanel extends JPanel {
             }
         });
 
+
         navigationPanel.add(prevWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(10));
         navigationPanel.add(weekLabel);
@@ -153,6 +155,7 @@ public class PlanningPanel extends JPanel {
         navigationPanel.add(dayViewToggle);
         navigationPanel.add(Box.createHorizontalStrut(20));
         navigationPanel.add(typeFilterCombo);
+
         
         // Actions
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));

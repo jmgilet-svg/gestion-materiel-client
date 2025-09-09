@@ -17,6 +17,7 @@ Application desktop moderne en Java Swing pour la gestion de matériel et réser
 - **Cartes interventions** enrichies avec statuts colorés
 - **Filtrage des ressources par type** et ajustement visuel des horaires
 
+
 ## 🛠️ Technologies
 
 - **Java 17**

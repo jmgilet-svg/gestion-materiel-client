@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+
 /**
  * Carte d'intervention améliorée avec design riche et informations complètes
  */
@@ -30,6 +31,7 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     private int pressY;
     private boolean resizingStart;
     private boolean resizingEnd;
+
     
     // Constantes de design
     private static final Color BACKGROUND_NORMAL = Color.WHITE;
@@ -429,6 +431,7 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     // Implémentation DragGestureListener
     @Override
     public void dragGestureRecognized(DragGestureEvent dge) {
+
         if (intervention.getId() == null || resizingStart || resizingEnd) {
             return;
         }
