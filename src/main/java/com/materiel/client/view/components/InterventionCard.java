@@ -13,6 +13,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -44,6 +46,8 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     private static final Font DETAIL_FONT = new Font("Segoe UI", Font.PLAIN, 10);
     private static final Font TIME_FONT = new Font("Segoe UI", Font.BOLD, 10);
     
+    private static final Logger log = LoggerFactory.getLogger(InterventionCard.class);
+
     public InterventionCard(Intervention intervention) {
         this.intervention = intervention;
         initComponents();
@@ -232,19 +236,12 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         resourceIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 10));
         panel.add(resourceIcon);
         
-        // Compter par type de ressource
-        java.util.Map<Resource.ResourceType, Long> resourceCounts = intervention.getRessources().stream()
-                .collect(Collectors.groupingBy(Resource::getType, Collectors.counting()));
-        
-        StringBuilder resourceText = new StringBuilder();
-        for (java.util.Map.Entry<Resource.ResourceType, Long> entry : resourceCounts.entrySet()) {
-            if (resourceText.length() > 0) resourceText.append(", ");
-            
-            String icon = getResourceTypeIcon(entry.getKey());
-            resourceText.append(icon).append(entry.getValue());
-        }
-        
-        JLabel resourceLabel = new JLabel(resourceText.toString());
+        // Afficher les noms des ressources séparés par des virgules
+        String resourceText = intervention.getRessources().stream()
+                .map(Resource::getNom)
+                .collect(Collectors.joining(", "));
+
+        JLabel resourceLabel = new JLabel(resourceText);
         resourceLabel.setFont(DETAIL_FONT);
         resourceLabel.setForeground(Color.decode("#6B7280"));
         
@@ -259,16 +256,6 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         panel.add(resourceLabel);
         
         return panel;
-    }
-    
-    private String getResourceTypeIcon(Resource.ResourceType type) {
-        return switch (type) {
-            case GRUE -> "🏗️";
-            case CAMION -> "🚛";
-            case CHAUFFEUR -> "👷";
-            case MAIN_OEUVRE -> "👥";
-            case RESSOURCE_GENERIQUE -> "⚙️";
-        };
     }
     
     private String formatDuree(long minutes) {
@@ -340,6 +327,19 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             }
         });
 
+        addMouseWheelListener(e -> {
+            if (intervention.getDateDebut() == null || intervention.getDateFin() == null) {
+                return;
+            }
+            if (e.getY() < 20) {
+                adjustStartTime(e.getWheelRotation());
+                e.consume();
+            } else if (e.getY() > getHeight() - 20) {
+                adjustEndTime(e.getWheelRotation());
+                e.consume();
+            }
+        });
+
         // Support des raccourcis clavier
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -375,6 +375,30 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         }
     }
 
+    /**
+     * Ajuste l'heure de début de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
+    private void adjustStartTime(int wheelRotation) {
+        LocalDateTime start = intervention.getDateDebut().plusMinutes(wheelRotation * 15);
+        if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
+            intervention.setDateDebut(start);
+            refreshTimeDisplay();
+        }
+    }
+
+    /**
+     * Ajuste l'heure de fin de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
+    private void adjustEndTime(int wheelRotation) {
+        LocalDateTime end = intervention.getDateFin().plusMinutes(wheelRotation * 15);
+        if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
+            intervention.setDateFin(end);
+            refreshTimeDisplay();
+        }
+    }
+
     private void refreshTimeDisplay() {
         if (timeLabel != null && durationLabel != null &&
             intervention.getDateDebut() != null && intervention.getDateFin() != null) {
@@ -385,6 +409,8 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             long minutes = Duration.between(intervention.getDateDebut(), intervention.getDateFin()).toMinutes();
             durationLabel.setText("(" + formatDuree(minutes) + ")");
         }
+        revalidate();
+        repaint();
     }
     
     private void updateAppearance() {
@@ -446,7 +472,7 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         } catch (Exception e) {
             dragging = false;
             updateAppearance();
-            e.printStackTrace();
+            log.error("Failed to start drag", e);
         }
     }
 
