@@ -919,4 +919,5 @@ public class PlanningPanel extends JPanel {
     public LocalDateTime applySnap(LocalDateTime time) {
         return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
     }
+
 }
