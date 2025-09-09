@@ -19,6 +19,7 @@ import java.awt.datatransfer.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -337,7 +338,7 @@ public class PlanningPanel extends JPanel {
                 if (!interventionDate.isBefore(currentWeekStart) && 
                     !interventionDate.isAfter(currentWeekStart.plusDays(6))) {
                     
-                    int dayIndex = (int) currentWeekStart.until(interventionDate).getDays();
+                    int dayIndex = (int) ChronoUnit.DAYS.between(currentWeekStart, interventionDate);
                     
                     // Ajouter l'intervention à toutes les cellules des ressources impliquées
                     for (Resource resource : intervention.getRessources()) {
@@ -387,7 +388,7 @@ public class PlanningPanel extends JPanel {
             if (!interventionDate.isBefore(currentWeekStart) && 
                 !interventionDate.isAfter(currentWeekStart.plusDays(6))) {
                 
-                int dayIndex = (int) currentWeekStart.until(interventionDate).getDays();
+                int dayIndex = (int) ChronoUnit.DAYS.between(currentWeekStart, interventionDate);
                 
                 for (Resource resource : intervention.getRessources()) {
                     int resourceIndex = resources.indexOf(resource);
@@ -584,12 +585,19 @@ public class PlanningPanel extends JPanel {
                     String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
                     System.out.println("🔧 DEBUG: Données reçues: " + data);
                     
-                    // Parser les données : "RESOURCE:id:nom:type"
+                    // Parser les données : "RESOURCE:id:nom:type" ou "INTERVENTION:id"
                     String[] parts = data.split(":");
-                    if (parts.length >= 3 && "RESOURCE".equals(parts[0])) {
+                    if (parts.length >= 2 && "INTERVENTION".equals(parts[0])) {
+                        Long interventionId = Long.parseLong(parts[1]);
+                        System.out.println("🔧 DEBUG: Tentative de déplacement pour intervention ID: " + interventionId);
+
+                        handleInterventionDrop(interventionId);
+                        dtde.getDropTargetContext().dropComplete(true);
+                        System.out.println("✅ Intervention déplacée avec succès");
+                    } else if (parts.length >= 3 && "RESOURCE".equals(parts[0])) {
                         Long resourceId = Long.parseLong(parts[1]);
                         System.out.println("🔧 DEBUG: Tentative de drop pour ressource ID: " + resourceId);
-                        
+
                         handleResourceDrop(resourceId);
                         dtde.getDropTargetContext().dropComplete(true);
                         System.out.println("✅ Drop traité avec succès");
@@ -649,6 +657,48 @@ public class PlanningPanel extends JPanel {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la création de l'intervention: " + e.getMessage(),
+                        "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+        }
+
+        private void handleInterventionDrop(Long interventionId) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    System.out.println("🔧 DEBUG: Déplacement de l'intervention ID: " + interventionId);
+
+                    Intervention movedIntervention = interventions.stream()
+                            .filter(i -> i.getId().equals(interventionId))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (movedIntervention == null) {
+                        System.err.println("🔧 ERROR: Intervention non trouvée avec ID: " + interventionId);
+                        JOptionPane.showMessageDialog(PlanningPanel.this,
+                            "Intervention non trouvée", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    LocalDate targetDate = targetCell.getDate();
+                    LocalDateTime newStart = LocalDateTime.of(targetDate, movedIntervention.getDateDebut().toLocalTime());
+                    LocalDateTime newEnd = LocalDateTime.of(targetDate, movedIntervention.getDateFin().toLocalTime());
+
+                    movedIntervention.setDateDebut(newStart);
+                    movedIntervention.setDateFin(newEnd);
+
+                    InterventionService interventionService = ServiceFactory.getInterventionService();
+                    interventionService.saveIntervention(movedIntervention);
+
+                    refreshPlanning();
+
+                    JOptionPane.showMessageDialog(PlanningPanel.this,
+                        "Intervention déplacée au " + targetDate,
+                        "Succès", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    System.err.println("🔧 ERROR: Erreur déplacement intervention: " + e.getMessage());
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(PlanningPanel.this,
+                        "Erreur lors du déplacement: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             });
