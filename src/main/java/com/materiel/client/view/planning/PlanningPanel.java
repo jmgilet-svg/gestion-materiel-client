@@ -755,6 +755,7 @@ public class PlanningPanel extends JPanel {
 
                 } catch (Exception e) {
                     log.error("Erreur handleResourceDrop", e);
+                    e.printStackTrace();
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la création de l'intervention: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
