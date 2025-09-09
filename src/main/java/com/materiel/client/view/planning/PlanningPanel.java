@@ -699,7 +699,7 @@ public class PlanningPanel extends JPanel {
                         Long resourceId = Long.parseLong(parts[1]);
                         System.out.println("🔧 DEBUG: Tentative de drop pour ressource ID: " + resourceId);
 
-                        handleResourceDrop(resourceId);
+                        handleResourceDrop(resourceId, dtde.getLocation());
                         dtde.getDropTargetContext().dropComplete(true);
                         System.out.println("✅ Drop traité avec succès");
                     } else {
@@ -720,39 +720,37 @@ public class PlanningPanel extends JPanel {
             }
         }
         
-        private void handleResourceDrop(Long resourceId) {
+        private void handleResourceDrop(Long resourceId, Point dropPoint) {
             SwingUtilities.invokeLater(() -> {
                 try {
                     System.out.println("🔧 DEBUG: Traitement du drop pour ressource ID: " + resourceId);
-                    
+
                     Resource droppedResource = resources.stream()
                             .filter(r -> r.getId().equals(resourceId))
                             .findFirst()
                             .orElse(null);
-                    
+
                     if (droppedResource == null) {
                         System.err.println("🔧 ERROR: Ressource non trouvée avec ID: " + resourceId);
-                        JOptionPane.showMessageDialog(PlanningPanel.this, 
+                        JOptionPane.showMessageDialog(PlanningPanel.this,
                             "Ressource non trouvée", "Erreur", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    
+
                     System.out.println("🔧 DEBUG: Ressource trouvée: " + droppedResource.getNom());
                     System.out.println("🔧 DEBUG: Date cible: " + targetCell.getDate());
-                    
-                    // Vérifier s'il y a déjà une intervention ce jour pour cette ressource
-                    Intervention existingIntervention = findExistingIntervention(targetCell.getDate(), droppedResource);
-                    
-                    if (existingIntervention != null) {
-                        System.out.println("🔧 DEBUG: Intervention existante trouvée, ajout de la ressource");
-                        // Ajouter la ressource à l'intervention existante
-                        addResourceToExistingIntervention(existingIntervention, droppedResource);
+
+                    Component comp = targetCell.getComponentAt(dropPoint);
+                    InterventionCard card = (InterventionCard) SwingUtilities.getAncestorOfClass(InterventionCard.class, comp);
+
+                    if (card != null) {
+                        System.out.println("🔧 DEBUG: Drop sur intervention existante");
+                        addResourceToExistingIntervention(card.getIntervention(), droppedResource);
                     } else {
-                        System.out.println("🔧 DEBUG: Aucune intervention existante, création d'une nouvelle");
-                        // Créer une nouvelle intervention
+                        System.out.println("🔧 DEBUG: Drop hors intervention, création d'une nouvelle");
                         createNewIntervention(targetCell.getDate(), droppedResource);
                     }
-                    
+
                 } catch (Exception e) {
                     System.err.println("🔧 ERROR: Erreur handleResourceDrop: " + e.getMessage());
                     e.printStackTrace();
@@ -805,17 +803,9 @@ public class PlanningPanel extends JPanel {
             });
         }
         
-        private Intervention findExistingIntervention(LocalDate date, Resource resource) {
-            return interventions.stream()
-                    .filter(i -> i.getDateDebut() != null && 
-                                i.getDateDebut().toLocalDate().equals(date))
-                    .findFirst() // CORRECTION: Chercher n'importe quelle intervention ce jour, pas seulement celles avec cette ressource
-                    .orElse(null);
-        }
-        
         private void addResourceToExistingIntervention(Intervention intervention, Resource newResource) {
             // Vérifier si la ressource n'est pas déjà dans l'intervention
-            if (intervention.getRessources() != null && 
+            if (intervention.getRessources() != null &&
                 intervention.getRessources().stream().anyMatch(r -> r.getId().equals(newResource.getId()))) {
                 JOptionPane.showMessageDialog(PlanningPanel.this,
                     "Cette ressource est déjà affectée à cette intervention",
