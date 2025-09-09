@@ -33,10 +33,13 @@ public class PlanningPanel extends JPanel {
     private static final int RESOURCE_PANEL_WIDTH = 200;
     private static final int DAY_COLUMN_WIDTH = 180;
     private static final int HOUR_ROW_HEIGHT = 80;
-    
+
     private JPanel resourceListPanel;
     private JPanel planningGridPanel;
     private JScrollPane planningScrollPane;
+    private CardLayout viewLayout;
+    private JPanel viewContainer;
+    private DayTimelinePanel dayTimelinePanel;
     private LocalDate currentWeekStart;
     private JLabel weekLabel; // Référence pour la mise à jour
     
@@ -69,9 +72,19 @@ public class PlanningPanel extends JPanel {
         // Liste des ressources à gauche
         resourceListPanel = createResourceListPanel();
         
-        // Grid de planning
+        // Conteneur de vue avec CardLayout (semaine/jour)
+        viewLayout = new CardLayout();
+        viewContainer = new JPanel(viewLayout);
+
+        // Vue semaine existante
         planningGridPanel = createPlanningGridPanel();
-        planningScrollPane = new JScrollPane(planningGridPanel);
+        viewContainer.add(planningGridPanel, "WEEK");
+
+        // Vue jour timeline (initialisée vide, se mettra à jour après chargement)
+        dayTimelinePanel = new DayTimelinePanel(LocalDate.now(), interventions);
+        viewContainer.add(new JScrollPane(dayTimelinePanel), "DAY");
+
+        planningScrollPane = new JScrollPane(viewContainer);
         planningScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         planningScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         
@@ -98,14 +111,16 @@ public class PlanningPanel extends JPanel {
         JButton prevWeekBtn = new JButton("← Semaine précédente");
         JButton nextWeekBtn = new JButton("Semaine suivante →");
         JButton todayBtn = new JButton("Aujourd'hui");
-        
+        JToggleButton dayViewToggle = new JToggleButton("Vue jour");
+
         prevWeekBtn.addActionListener(e -> navigateWeek(-1));
         nextWeekBtn.addActionListener(e -> navigateWeek(1));
         todayBtn.addActionListener(e -> goToToday());
-        
+        dayViewToggle.addActionListener(e -> toggleDayView(dayViewToggle.isSelected()));
+
         weekLabel = new JLabel(formatWeekRange());
         weekLabel.setFont(weekLabel.getFont().deriveFont(Font.BOLD, 16f));
-        
+
         navigationPanel.add(prevWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(10));
         navigationPanel.add(weekLabel);
@@ -113,6 +128,8 @@ public class PlanningPanel extends JPanel {
         navigationPanel.add(nextWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(20));
         navigationPanel.add(todayBtn);
+        navigationPanel.add(Box.createHorizontalStrut(10));
+        navigationPanel.add(dayViewToggle);
         
         // Actions
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -357,6 +374,11 @@ public class PlanningPanel extends JPanel {
         
         // Détecter et afficher les conflits
         detectAndHighlightConflicts();
+
+        // Mettre à jour la vue jour
+        if (dayTimelinePanel != null) {
+            dayTimelinePanel.setDate(LocalDate.now(), interventions);
+        }
     }
     
     private void detectAndHighlightConflicts() {
@@ -418,6 +440,15 @@ public class PlanningPanel extends JPanel {
         currentWeekStart = getStartOfWeek(LocalDate.now());
         updateWeekDisplay();
         loadData();
+    }
+
+    private void toggleDayView(boolean dayView) {
+        if (dayView) {
+            dayTimelinePanel.setDate(LocalDate.now(), interventions);
+            viewLayout.show(viewContainer, "DAY");
+        } else {
+            viewLayout.show(viewContainer, "WEEK");
+        }
     }
     
     private void updateWeekDisplay() {
