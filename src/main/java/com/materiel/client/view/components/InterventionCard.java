@@ -232,19 +232,12 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         resourceIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 10));
         panel.add(resourceIcon);
         
-        // Compter par type de ressource
-        java.util.Map<Resource.ResourceType, Long> resourceCounts = intervention.getRessources().stream()
-                .collect(Collectors.groupingBy(Resource::getType, Collectors.counting()));
-        
-        StringBuilder resourceText = new StringBuilder();
-        for (java.util.Map.Entry<Resource.ResourceType, Long> entry : resourceCounts.entrySet()) {
-            if (resourceText.length() > 0) resourceText.append(", ");
-            
-            String icon = getResourceTypeIcon(entry.getKey());
-            resourceText.append(icon).append(entry.getValue());
-        }
-        
-        JLabel resourceLabel = new JLabel(resourceText.toString());
+        // Afficher les noms des ressources séparés par des virgules
+        String resourceText = intervention.getRessources().stream()
+                .map(Resource::getNom)
+                .collect(Collectors.joining(", "));
+
+        JLabel resourceLabel = new JLabel(resourceText);
         resourceLabel.setFont(DETAIL_FONT);
         resourceLabel.setForeground(Color.decode("#6B7280"));
         
@@ -259,16 +252,6 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         panel.add(resourceLabel);
         
         return panel;
-    }
-    
-    private String getResourceTypeIcon(Resource.ResourceType type) {
-        return switch (type) {
-            case GRUE -> "🏗️";
-            case CAMION -> "🚛";
-            case CHAUFFEUR -> "👷";
-            case MAIN_OEUVRE -> "👥";
-            case RESSOURCE_GENERIQUE -> "⚙️";
-        };
     }
     
     private String formatDuree(long minutes) {
@@ -340,6 +323,17 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             }
         });
 
+        addMouseWheelListener(e -> {
+            if (intervention.getDateDebut() == null || intervention.getDateFin() == null) {
+                return;
+            }
+            if (e.getY() < 20) {
+                adjustStartTime(e.getWheelRotation());
+            } else if (e.getY() > getHeight() - 20) {
+                adjustEndTime(e.getWheelRotation());
+            }
+        });
+
         // Support des raccourcis clavier
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -372,6 +366,22 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
                 pressY += steps * 10;
                 refreshTimeDisplay();
             }
+        }
+    }
+
+    private void adjustStartTime(int wheelRotation) {
+        LocalDateTime start = intervention.getDateDebut().plusMinutes(wheelRotation * 15);
+        if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
+            intervention.setDateDebut(start);
+            refreshTimeDisplay();
+        }
+    }
+
+    private void adjustEndTime(int wheelRotation) {
+        LocalDateTime end = intervention.getDateFin().plusMinutes(wheelRotation * 15);
+        if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
+            intervention.setDateFin(end);
+            refreshTimeDisplay();
         }
     }
 
