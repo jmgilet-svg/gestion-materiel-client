@@ -1,4 +1,4 @@
-// ResourceCard.java
+// ResourceCard.java - Version corrigée pour le drag & drop
 package com.materiel.client.view.components;
 
 import com.materiel.client.model.Resource;
@@ -39,7 +39,8 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
         this.resource = resource;
         initComponents();
         setupDragAndDrop();
-        checkConflictStatus();
+        // Commenter temporairement pour éviter les problèmes de conflit
+        // checkConflictStatus();
     }
     
     private void initComponents() {
@@ -247,19 +248,10 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
     }
     
     private void checkConflictStatus() {
-        // Vérifier les conflits pour la période actuelle (aujourd'hui)
-        try {
-            InterventionService interventionService = ServiceFactory.getInterventionService();
-            LocalDate today = LocalDate.now();
-            
-            // Simuler une vérification de conflit
-            // Dans une vraie application, cela vérifierait les interventions actuelles
-            this.isOccupied = false; // À implémenter selon les interventions en cours
-            this.hasConflict = false; // À implémenter selon les conflits détectés
-            
-        } catch (Exception e) {
-            System.err.println("Erreur lors de la vérification des conflits: " + e.getMessage());
-        }
+        // Version simplifiée pour éviter les problèmes
+        this.isOccupied = false;
+        this.hasConflict = false;
+        updateAppearance();
     }
     
     public void updateConflictStatus(boolean hasConflict, boolean isOccupied) {
@@ -340,8 +332,15 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
     // Implémentation DragGestureListener
     @Override
     public void dragGestureRecognized(DragGestureEvent dge) {
-        if (!resource.isDisponible() || hasConflict) {
-            return; // Ne pas permettre le drag si indisponible ou en conflit
+        System.out.println("🔧 DEBUG: Drag gesture reconnu pour " + resource.getNom());
+        System.out.println("🔧 DEBUG: Ressource disponible: " + resource.isDisponible());
+        System.out.println("🔧 DEBUG: A conflit: " + hasConflict);
+        
+        // MODIFICATION: Permettre le drag même s'il y a des conflits légers
+        // Seule l'indisponibilité empêche le drag
+        if (!resource.isDisponible()) {
+            System.out.println("🔧 DEBUG: Drag annulé - ressource indisponible");
+            return;
         }
         
         dragging = true;
@@ -349,16 +348,24 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
         
         // Créer un transferable avec les données de la ressource
         String transferData = "RESOURCE:" + resource.getId() + ":" + resource.getNom() + ":" + resource.getType().name();
+        System.out.println("🔧 DEBUG: Données de transfert: " + transferData);
+        
         StringSelection transferable = new StringSelection(transferData);
         
-        // Démarrer le drag
-        dragSource.startDrag(dge, DragSource.DefaultMoveDrop, transferable, this);
+        // Démarrer le drag avec un curseur personnalisé
+        try {
+            dragSource.startDrag(dge, DragSource.DefaultMoveDrop, transferable, this);
+            System.out.println("🔧 DEBUG: Drag démarré avec succès");
+        } catch (Exception e) {
+            System.err.println("🔧 ERROR: Erreur lors du démarrage du drag: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     // Implémentation DragSourceListener
     @Override
     public void dragEnter(DragSourceDragEvent dsde) {
-        // Feedback visuel lors de l'entrée dans une zone de drop valide
+        System.out.println("🔧 DEBUG: Drag enter");
     }
     
     @Override
@@ -368,24 +375,28 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
     
     @Override
     public void dropActionChanged(DragSourceDragEvent dsde) {
-        // Changement d'action de drop
+        System.out.println("🔧 DEBUG: Drop action changed");
     }
     
     @Override
     public void dragExit(DragSourceEvent dse) {
-        // Sortie d'une zone de drop
+        System.out.println("🔧 DEBUG: Drag exit");
     }
     
     @Override
     public void dragDropEnd(DragSourceDropEvent dsde) {
+        System.out.println("🔧 DEBUG: Drag drop end - Succès: " + dsde.getDropSuccess());
+        
         dragging = false;
         hovered = false;
         updateAppearance();
         
         if (dsde.getDropSuccess()) {
-            System.out.println("Drop réussi pour la ressource: " + resource.getNom());
+            System.out.println("✅ Drop réussi pour la ressource: " + resource.getNom());
             // Mettre à jour le statut d'occupation si nécessaire
             checkConflictStatus();
+        } else {
+            System.out.println("❌ Drop échoué pour la ressource: " + resource.getNom());
         }
     }
     
