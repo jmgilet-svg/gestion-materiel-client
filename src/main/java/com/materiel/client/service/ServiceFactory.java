@@ -9,6 +9,8 @@ import com.materiel.client.service.impl.MockClientService;
 import com.materiel.client.service.impl.MockDevisService;
 import com.materiel.client.service.impl.MockInterventionService;
 import com.materiel.client.service.impl.MockResourceService;
+import com.materiel.client.service.impl.MockCommandeService;
+import com.materiel.client.service.impl.MockBonLivraisonService;
 
 /**
  * Factory pour créer les services selon le mode configuré
@@ -19,6 +21,8 @@ public class ServiceFactory {
     private static InterventionService interventionService;
     private static DevisService devisService;
     private static ClientService clientService;
+    private static CommandeService commandeService;
+    private static BonLivraisonService bonLivraisonService;
     
     public static ResourceService getResourceService() {
         if (resourceService == null) {
@@ -68,6 +72,32 @@ public class ServiceFactory {
         return clientService;
     }
     
+    public static CommandeService getCommandeService() {
+        if (commandeService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                // TODO: Implémenter ApiCommandeService
+                commandeService = new MockCommandeService();
+            } else {
+                commandeService = new MockCommandeService();
+            }
+        }
+        return commandeService;
+    }
+    
+    public static BonLivraisonService getBonLivraisonService() {
+        if (bonLivraisonService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                // TODO: Implémenter ApiBonLivraisonService
+                bonLivraisonService = new MockBonLivraisonService();
+            } else {
+                bonLivraisonService = new MockBonLivraisonService();
+            }
+        }
+        return bonLivraisonService;
+    }
+    
     /**
      * Force la recréation des services (utile lors du changement de mode)
      */
@@ -76,5 +106,7 @@ public class ServiceFactory {
         interventionService = null;
         devisService = null;
         clientService = null;
+        commandeService = null;
+        bonLivraisonService = null;
     }
 }

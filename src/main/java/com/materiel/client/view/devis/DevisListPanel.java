@@ -2,6 +2,7 @@ package com.materiel.client.view.devis;
 
 import com.materiel.client.model.Devis;
 import com.materiel.client.service.ServiceFactory;
+import com.materiel.client.util.ColorUtils;
 import com.materiel.client.service.DevisService;
 
 import javax.swing.*;
@@ -410,7 +411,7 @@ public class DevisListPanel extends JPanel {
                 setText(statut.getDisplayName());
                 
                 if (!isSelected) {
-                    setBackground(Color.decode(statut.getColor() + "20")); // Couleur avec transparence
+                    setBackground(ColorUtils.createColorWithAlpha(statut.getColor(),20)); // Couleur avec transparence
                     setForeground(Color.decode(statut.getColor()));
                 }
                 

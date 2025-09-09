@@ -3,6 +3,8 @@ package com.materiel.client.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Modèle pour les interventions/réservations
  */
@@ -82,10 +84,12 @@ public class Intervention {
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     
+    @JsonIgnore
     public String getHeureDebut() {
         return dateDebut != null ? dateDebut.toLocalTime().toString() : "";
     }
-    
+
+    @JsonIgnore
     public String getHeureFin() {
         return dateFin != null ? dateFin.toLocalTime().toString() : "";
     }
