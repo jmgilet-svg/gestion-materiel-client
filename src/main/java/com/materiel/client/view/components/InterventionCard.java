@@ -340,6 +340,19 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             }
         });
 
+        addMouseWheelListener(e -> {
+            if (intervention.getDateDebut() == null || intervention.getDateFin() == null) {
+                return;
+            }
+            if (e.getY() < 20) {
+                adjustStartTime(e.getWheelRotation());
+                e.consume();
+            } else if (e.getY() > getHeight() - 20) {
+                adjustEndTime(e.getWheelRotation());
+                e.consume();
+            }
+        });
+
         // Support des raccourcis clavier
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -372,6 +385,30 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
                 pressY += steps * 10;
                 refreshTimeDisplay();
             }
+        }
+    }
+
+    /**
+     * Ajuste l'heure de début de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
+    private void adjustStartTime(int wheelRotation) {
+        LocalDateTime start = intervention.getDateDebut().plusMinutes(wheelRotation * 15);
+        if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
+            intervention.setDateDebut(start);
+            refreshTimeDisplay();
+        }
+    }
+
+    /**
+     * Ajuste l'heure de fin de l'intervention via la molette.
+     * @param wheelRotation direction du scroll
+     */
+    private void adjustEndTime(int wheelRotation) {
+        LocalDateTime end = intervention.getDateFin().plusMinutes(wheelRotation * 15);
+        if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
+            intervention.setDateFin(end);
+            refreshTimeDisplay();
         }
     }
 

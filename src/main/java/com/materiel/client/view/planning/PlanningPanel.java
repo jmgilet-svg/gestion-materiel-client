@@ -10,6 +10,7 @@ import com.materiel.client.service.InterventionService;
 import com.materiel.client.view.components.ResourceCard;
 import com.materiel.client.view.components.InterventionCard;
 import com.materiel.client.view.planning.InterventionCreateDialog;
+import com.materiel.client.view.planning.PlanningBoard;
 import com.materiel.client.view.resources.ResourceEditDialog;
 
 import javax.swing.*;
@@ -41,7 +42,7 @@ public class PlanningPanel extends JPanel {
     private static final Logger log = LoggerFactory.getLogger(PlanningPanel.class);
 
     private JPanel resourceListPanel;
-    private JPanel planningGridPanel;
+    private PlanningBoard planningGridPanel;
     private JScrollPane planningScrollPane;
     private CardLayout viewLayout;
     private JPanel viewContainer;
@@ -205,8 +206,9 @@ public class PlanningPanel extends JPanel {
         return panel;
     }
     
-    private JPanel createPlanningGridPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private PlanningBoard createPlanningGridPanel() {
+        PlanningBoard panel = new PlanningBoard();
+        panel.setLayout(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
         // Header avec les jours de la semaine
@@ -755,7 +757,6 @@ public class PlanningPanel extends JPanel {
 
                 } catch (Exception e) {
                     log.error("Erreur handleResourceDrop", e);
-                    e.printStackTrace();
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la création de l'intervention: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -897,5 +898,24 @@ public class PlanningPanel extends JPanel {
                 log.debug("Création d'intervention annulée");
             }
         }
+    }
+
+    /** Change the active time scale for the planning board. */
+    public void setTimeScale(int minutesPerCell) {
+        if (planningGridPanel != null) {
+            planningGridPanel.setTimeScale(minutesPerCell);
+        }
+    }
+
+    /** Enable or disable multi-selection on the board. */
+    public void enableMultiSelection(boolean enable) {
+        if (planningGridPanel != null) {
+            planningGridPanel.enableMultiSelection(enable);
+        }
+    }
+
+    /** Apply current snap increment to a time value. */
+    public LocalDateTime applySnap(LocalDateTime time) {
+        return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
     }
 }
