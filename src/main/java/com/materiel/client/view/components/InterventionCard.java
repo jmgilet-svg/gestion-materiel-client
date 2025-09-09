@@ -9,6 +9,7 @@ import java.awt.dnd.*;
 import java.awt.datatransfer.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ResourceBundle;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import java.time.Duration;
@@ -47,12 +48,14 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     private static final Font TIME_FONT = new Font("Segoe UI", Font.BOLD, 10);
     
     private static final Logger log = LoggerFactory.getLogger(InterventionCard.class);
+    private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("messages");
 
     public InterventionCard(Intervention intervention) {
         this.intervention = intervention;
         initComponents();
         setupEventHandlers();
         setupDragAndDrop();
+        updateTooltip();
     }
     
     private void initComponents() {
@@ -340,19 +343,6 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
             }
         });
 
-        addMouseWheelListener(e -> {
-            if (intervention.getDateDebut() == null || intervention.getDateFin() == null) {
-                return;
-            }
-            if (e.getY() < 20) {
-                adjustStartTime(e.getWheelRotation());
-                e.consume();
-            } else if (e.getY() > getHeight() - 20) {
-                adjustEndTime(e.getWheelRotation());
-                e.consume();
-            }
-        });
-
         // Support des raccourcis clavier
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -412,30 +402,6 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         }
     }
 
-    /**
-     * Ajuste l'heure de début de l'intervention via la molette.
-     * @param wheelRotation direction du scroll
-     */
-    private void adjustStartTime(int wheelRotation) {
-        LocalDateTime start = intervention.getDateDebut().plusMinutes(wheelRotation * 15);
-        if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
-            intervention.setDateDebut(start);
-            refreshTimeDisplay();
-        }
-    }
-
-    /**
-     * Ajuste l'heure de fin de l'intervention via la molette.
-     * @param wheelRotation direction du scroll
-     */
-    private void adjustEndTime(int wheelRotation) {
-        LocalDateTime end = intervention.getDateFin().plusMinutes(wheelRotation * 15);
-        if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
-            intervention.setDateFin(end);
-            refreshTimeDisplay();
-        }
-    }
-
     private void refreshTimeDisplay() {
         if (timeLabel != null && durationLabel != null &&
             intervention.getDateDebut() != null && intervention.getDateFin() != null) {
@@ -450,7 +416,28 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         repaint();
     }
     
-    private void updateAppearance() {
+        private void updateTooltip() {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        String client = intervention.getClient() != null ? intervention.getClient().getNom() : BUNDLE.getString("tooltip.none");
+        String hours;
+        if (intervention.getDateDebut() != null && intervention.getDateFin() != null) {
+            hours = intervention.getDateDebut().format(fmt) + " - " + intervention.getDateFin().format(fmt);
+        } else {
+            hours = BUNDLE.getString("tooltip.none");
+        }
+        String address = (intervention.getAdresseIntervention() != null && !intervention.getAdresseIntervention().isBlank()) ? intervention.getAdresseIntervention() : BUNDLE.getString("tooltip.none");
+        String status = intervention.getStatut() != null ? intervention.getStatut().getDisplayName() : BUNDLE.getString("tooltip.none");
+        String conflict = BUNDLE.getString("tooltip.no_conflict");
+        String tip = String.format("<html>%s<br>%s<br>%s<br>%s<br>%s</html>",
+                BUNDLE.getString("tooltip.client").replace("{0}", client),
+                BUNDLE.getString("tooltip.hours").replace("{0}", hours),
+                BUNDLE.getString("tooltip.address").replace("{0}", address),
+                BUNDLE.getString("tooltip.status").replace("{0}", status),
+                BUNDLE.getString("tooltip.conflict").replace("{0}", conflict));
+        setToolTipText(tip);
+    }
+
+private void updateAppearance() {
         Color backgroundColor;
         Color borderColor;
         int borderWidth;
@@ -768,4 +755,5 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         this.selected = selected;
         updateAppearance();
     }
+
 }

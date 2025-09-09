@@ -555,26 +555,25 @@ public class PlanningPanel extends JPanel {
         private final int dayIndex;
         private final List<InterventionCard> interventionCards;
         private boolean hasConflict = false;
-        
+
         public DayCell(Resource resource, LocalDate date, int resourceIndex, int dayIndex) {
             this.resource = resource;
             this.date = date;
             this.resourceIndex = resourceIndex;
             this.dayIndex = dayIndex;
             this.interventionCards = new ArrayList<>();
-            
+
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setBackground(Color.WHITE);
             updateAppearance();
         }
-        
+
         public void addIntervention(Intervention intervention) {
             InterventionCard card = new InterventionCard(intervention);
             card.setAlignmentX(Component.LEFT_ALIGNMENT);
             card.setMaximumSize(new Dimension(DAY_COLUMN_WIDTH - 10, 60));
 
             interventionCards.add(card);
-            // Trier par date de début décroissante (plus récente en premier)
             interventionCards.sort((a, b) -> {
                 LocalDateTime sa = a.getIntervention().getDateDebut();
                 LocalDateTime sb = b.getIntervention().getDateDebut();
@@ -582,29 +581,31 @@ public class PlanningPanel extends JPanel {
                 return sb.compareTo(sa);
             });
 
-            // Reconstuire l'affichage avec décalage si chevauchement
+            applyLayout();
+        }
+
+        private void applyLayout() {
             removeAll();
-            for (int i = 0; i < interventionCards.size(); i++) {
-                InterventionCard c = interventionCards.get(i);
-                int offset = 0;
-                LocalDateTime start = c.getIntervention().getDateDebut();
-                LocalDateTime end = c.getIntervention().getDateFin();
-                for (int j = 0; j < i; j++) {
-                    InterventionCard prev = interventionCards.get(j);
-                    LocalDateTime ps = prev.getIntervention().getDateDebut();
-                    LocalDateTime pe = prev.getIntervention().getDateFin();
-                    if (start != null && end != null && ps != null && pe != null) {
-                        boolean overlap = !end.isBefore(ps) && !start.isAfter(pe);
-                        if (overlap) {
-                            offset += 20; // décale vers la droite
-                        }
-                    }
+            List<Intervention> ints = interventionCards.stream()
+                    .map(InterventionCard::getIntervention)
+                    .collect(Collectors.toList());
+            List<OverlapLayout.Lane> lanes = OverlapLayout.layoutLanes(ints);
+            Map<Intervention, OverlapLayout.Lane> map = new HashMap<>();
+            for (OverlapLayout.Lane l : lanes) {
+                map.put(l.getIntervention(), l);
+            }
+            final int gutter = 2;
+            final int available = DAY_COLUMN_WIDTH - 10;
+            for (InterventionCard c : interventionCards) {
+                OverlapLayout.Lane lane = map.get(c.getIntervention());
+                int width = available;
+                int xOffset = 0;
+                if (lane != null) {
+                    width = (available - (lane.getColCount() - 1) * gutter) / lane.getColCount();
+                    xOffset = lane.getCol() * (width + gutter);
                 }
-                if (offset > 0) {
-                    c.setBorder(BorderFactory.createEmptyBorder(0, offset, 0, 0));
-                } else {
-                    c.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-                }
+                c.setBorder(BorderFactory.createEmptyBorder(0, xOffset, 0, 0));
+                c.setMaximumSize(new Dimension(width, 60));
                 add(c);
                 add(Box.createVerticalStrut(2));
             }
@@ -612,7 +613,7 @@ public class PlanningPanel extends JPanel {
             revalidate();
             repaint();
         }
-        
+
         public void clearInterventions() {
             for (InterventionCard card : interventionCards) {
                 remove(card);
@@ -622,12 +623,12 @@ public class PlanningPanel extends JPanel {
             revalidate();
             repaint();
         }
-        
+
         public void setConflict(boolean conflict) {
             this.hasConflict = conflict;
             updateAppearance();
         }
-        
+
         private void updateAppearance() {
             if (hasConflict) {
                 setBackground(Color.decode("#FEF2F2")); // Rouge très clair
@@ -637,7 +638,7 @@ public class PlanningPanel extends JPanel {
                 setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
             }
         }
-        
+
         public Resource getResource() { return resource; }
         public LocalDate getDate() { return date; }
         public int getResourceIndex() { return resourceIndex; }
@@ -918,4 +919,5 @@ public class PlanningPanel extends JPanel {
     public LocalDateTime applySnap(LocalDateTime time) {
         return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
     }
+
 }
