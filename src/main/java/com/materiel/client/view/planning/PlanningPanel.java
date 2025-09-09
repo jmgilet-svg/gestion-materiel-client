@@ -10,6 +10,7 @@ import com.materiel.client.service.InterventionService;
 import com.materiel.client.view.components.ResourceCard;
 import com.materiel.client.view.components.InterventionCard;
 import com.materiel.client.view.planning.InterventionCreateDialog;
+import com.materiel.client.view.planning.PlanningBoard;
 import com.materiel.client.view.resources.ResourceEditDialog;
 
 import javax.swing.*;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,8 +39,10 @@ public class PlanningPanel extends JPanel {
     private static final int DAY_COLUMN_WIDTH = 180;
     private static final int HOUR_ROW_HEIGHT = 80;
 
+    private static final Logger log = LoggerFactory.getLogger(PlanningPanel.class);
+
     private JPanel resourceListPanel;
-    private JPanel planningGridPanel;
+    private PlanningBoard planningGridPanel;
     private JScrollPane planningScrollPane;
     private CardLayout viewLayout;
     private JPanel viewContainer;
@@ -201,8 +206,9 @@ public class PlanningPanel extends JPanel {
         return panel;
     }
     
-    private JPanel createPlanningGridPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private PlanningBoard createPlanningGridPanel() {
+        PlanningBoard panel = new PlanningBoard();
+        panel.setLayout(new BorderLayout());
         panel.setBackground(Color.WHITE);
         
         // Header avec les jours de la semaine
@@ -282,12 +288,12 @@ public class PlanningPanel extends JPanel {
         cell.setPreferredSize(new Dimension(DAY_COLUMN_WIDTH, HOUR_ROW_HEIGHT));
         cell.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
         
-        // Support du drop - CORRECTION: Créer un DropTarget pour chaque cellule
+        // Support du drop - créer un DropTarget pour chaque cellule
         try {
             DropTarget dropTarget = new DropTarget(cell, new InterventionDropTargetListener(cell));
-            System.out.println("🔧 DEBUG: DropTarget créé pour cellule " + resourceIndex + "-" + dayIndex);
+            log.debug("DropTarget créé pour cellule {}-{}", resourceIndex, dayIndex);
         } catch (Exception e) {
-            System.err.println("🔧 ERROR: Erreur création DropTarget: " + e.getMessage());
+            log.error("Erreur création DropTarget", e);
         }
         
         return cell;
@@ -295,25 +301,24 @@ public class PlanningPanel extends JPanel {
     
     private void setupDragAndDrop() {
         // Le drag & drop sera géré dans les composants individuels
-        System.out.println("🔧 DEBUG: Setup drag & drop terminé");
+        log.debug("Setup drag & drop terminé");
     }
     
     private void loadData() {
         SwingUtilities.invokeLater(() -> {
             try {
-                System.out.println("🔧 DEBUG: Chargement des données...");
+                log.debug("Chargement des données");
                 ResourceService resourceService = ServiceFactory.getResourceService();
                 InterventionService interventionService = ServiceFactory.getInterventionService();
-                
+
                 allResources = resourceService.getAllResources();
                 interventions = interventionService.getInterventionsByDateRange(currentWeekStart, currentWeekStart.plusDays(6));
 
-                System.out.println("🔧 DEBUG: " + allResources.size() + " ressources chargées");
-                System.out.println("🔧 DEBUG: " + interventions.size() + " interventions chargées");
+                log.debug("{} ressources chargées", allResources.size());
+                log.debug("{} interventions chargées", interventions.size());
                 applyResourceFilter();
             } catch (Exception e) {
-                System.err.println("🔧 ERROR: Erreur lors du chargement: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Erreur lors du chargement", e);
                 JOptionPane.showMessageDialog(this,
                     "Erreur lors du chargement des données: " + e.getMessage(),
                     "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -357,8 +362,8 @@ public class PlanningPanel extends JPanel {
         resourceListPanel.add(Box.createVerticalGlue());
         resourceListPanel.revalidate();
         resourceListPanel.repaint();
-        
-        System.out.println("🔧 DEBUG: Liste des ressources mise à jour avec " + resources.size() + " éléments");
+
+        log.debug("Liste des ressources mise à jour avec {} éléments", resources.size());
     }
     
     private void updatePlanningGrid() {
@@ -374,8 +379,8 @@ public class PlanningPanel extends JPanel {
         
         planningGridPanel.revalidate();
         planningGridPanel.repaint();
-        
-        System.out.println("🔧 DEBUG: Grid de planning mis à jour");
+
+        log.debug("Grid de planning mis à jour");
     }
     
     private void updateInterventionsDisplay() {
@@ -428,14 +433,14 @@ public class PlanningPanel extends JPanel {
         // Détecter les conflits
         try {
             InterventionService interventionService = ServiceFactory.getInterventionService();
-            
+
             for (Intervention intervention : interventions) {
                 if (interventionService.hasConflict(intervention)) {
                     markInterventionAsConflicted(intervention);
                 }
             }
         } catch (Exception e) {
-            System.err.println("🔧 ERROR: Erreur détection conflits: " + e.getMessage());
+            log.error("Erreur détection conflits", e);
         }
         
         repaint();
@@ -550,26 +555,25 @@ public class PlanningPanel extends JPanel {
         private final int dayIndex;
         private final List<InterventionCard> interventionCards;
         private boolean hasConflict = false;
-        
+
         public DayCell(Resource resource, LocalDate date, int resourceIndex, int dayIndex) {
             this.resource = resource;
             this.date = date;
             this.resourceIndex = resourceIndex;
             this.dayIndex = dayIndex;
             this.interventionCards = new ArrayList<>();
-            
+
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setBackground(Color.WHITE);
             updateAppearance();
         }
-        
+
         public void addIntervention(Intervention intervention) {
             InterventionCard card = new InterventionCard(intervention);
             card.setAlignmentX(Component.LEFT_ALIGNMENT);
             card.setMaximumSize(new Dimension(DAY_COLUMN_WIDTH - 10, 60));
 
             interventionCards.add(card);
-            // Trier par date de début décroissante (plus récente en premier)
             interventionCards.sort((a, b) -> {
                 LocalDateTime sa = a.getIntervention().getDateDebut();
                 LocalDateTime sb = b.getIntervention().getDateDebut();
@@ -577,29 +581,31 @@ public class PlanningPanel extends JPanel {
                 return sb.compareTo(sa);
             });
 
-            // Reconstuire l'affichage avec décalage si chevauchement
+            applyLayout();
+        }
+
+        private void applyLayout() {
             removeAll();
-            for (int i = 0; i < interventionCards.size(); i++) {
-                InterventionCard c = interventionCards.get(i);
-                int offset = 0;
-                LocalDateTime start = c.getIntervention().getDateDebut();
-                LocalDateTime end = c.getIntervention().getDateFin();
-                for (int j = 0; j < i; j++) {
-                    InterventionCard prev = interventionCards.get(j);
-                    LocalDateTime ps = prev.getIntervention().getDateDebut();
-                    LocalDateTime pe = prev.getIntervention().getDateFin();
-                    if (start != null && end != null && ps != null && pe != null) {
-                        boolean overlap = !end.isBefore(ps) && !start.isAfter(pe);
-                        if (overlap) {
-                            offset += 20; // décale vers la droite
-                        }
-                    }
+            List<Intervention> ints = interventionCards.stream()
+                    .map(InterventionCard::getIntervention)
+                    .collect(Collectors.toList());
+            List<OverlapLayout.Lane> lanes = OverlapLayout.layoutLanes(ints);
+            Map<Intervention, OverlapLayout.Lane> map = new HashMap<>();
+            for (OverlapLayout.Lane l : lanes) {
+                map.put(l.getIntervention(), l);
+            }
+            final int gutter = 2;
+            final int available = DAY_COLUMN_WIDTH - 10;
+            for (InterventionCard c : interventionCards) {
+                OverlapLayout.Lane lane = map.get(c.getIntervention());
+                int width = available;
+                int xOffset = 0;
+                if (lane != null) {
+                    width = (available - (lane.getColCount() - 1) * gutter) / lane.getColCount();
+                    xOffset = lane.getCol() * (width + gutter);
                 }
-                if (offset > 0) {
-                    c.setBorder(BorderFactory.createEmptyBorder(0, offset, 0, 0));
-                } else {
-                    c.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-                }
+                c.setBorder(BorderFactory.createEmptyBorder(0, xOffset, 0, 0));
+                c.setMaximumSize(new Dimension(width, 60));
                 add(c);
                 add(Box.createVerticalStrut(2));
             }
@@ -607,7 +613,7 @@ public class PlanningPanel extends JPanel {
             revalidate();
             repaint();
         }
-        
+
         public void clearInterventions() {
             for (InterventionCard card : interventionCards) {
                 remove(card);
@@ -617,12 +623,12 @@ public class PlanningPanel extends JPanel {
             revalidate();
             repaint();
         }
-        
+
         public void setConflict(boolean conflict) {
             this.hasConflict = conflict;
             updateAppearance();
         }
-        
+
         private void updateAppearance() {
             if (hasConflict) {
                 setBackground(Color.decode("#FEF2F2")); // Rouge très clair
@@ -632,7 +638,7 @@ public class PlanningPanel extends JPanel {
                 setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
             }
         }
-        
+
         public Resource getResource() { return resource; }
         public LocalDate getDate() { return date; }
         public int getResourceIndex() { return resourceIndex; }
@@ -652,7 +658,7 @@ public class PlanningPanel extends JPanel {
         
         @Override
         public void dragEnter(DropTargetDragEvent dtde) {
-            System.out.println("🔧 DEBUG: Drag enter sur cellule " + targetCell.getResourceIndex() + "-" + targetCell.getDayIndex());
+            log.debug("Drag enter sur cellule {}-{}", targetCell.getResourceIndex(), targetCell.getDayIndex());
             dtde.acceptDrag(DnDConstants.ACTION_MOVE);
             // Feedback visuel
             targetCell.setBackground(Color.decode("#EBF4FF"));
@@ -670,49 +676,48 @@ public class PlanningPanel extends JPanel {
         
         @Override
         public void dragExit(DropTargetEvent dte) {
-            System.out.println("🔧 DEBUG: Drag exit");
+            log.debug("Drag exit");
             // Restaurer l'apparence normale
             targetCell.updateAppearance();
         }
         
         @Override
         public void drop(DropTargetDropEvent dtde) {
-            System.out.println("🔧 DEBUG: Drop détecté !");
+            log.debug("Drop détecté");
             try {
                 dtde.acceptDrop(DnDConstants.ACTION_MOVE);
-                
+
                 Transferable transferable = dtde.getTransferable();
                 if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
                     String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
-                    System.out.println("🔧 DEBUG: Données reçues: " + data);
-                    
+                    log.debug("Données reçues: {}", data);
+
                     // Parser les données : "RESOURCE:id:nom:type" ou "INTERVENTION:id"
                     String[] parts = data.split(":");
                     if (parts.length >= 2 && "INTERVENTION".equals(parts[0])) {
                         Long interventionId = Long.parseLong(parts[1]);
-                        System.out.println("🔧 DEBUG: Tentative de déplacement pour intervention ID: " + interventionId);
+                        log.debug("Tentative de déplacement pour intervention ID: {}", interventionId);
 
                         handleInterventionDrop(interventionId);
                         dtde.getDropTargetContext().dropComplete(true);
-                        System.out.println("✅ Intervention déplacée avec succès");
+                        log.info("Intervention déplacée avec succès");
                     } else if (parts.length >= 3 && "RESOURCE".equals(parts[0])) {
                         Long resourceId = Long.parseLong(parts[1]);
-                        System.out.println("🔧 DEBUG: Tentative de drop pour ressource ID: " + resourceId);
+                        log.debug("Tentative de drop pour ressource ID: {}", resourceId);
 
-                        handleResourceDrop(resourceId);
+                        handleResourceDrop(resourceId, dtde.getLocation());
                         dtde.getDropTargetContext().dropComplete(true);
-                        System.out.println("✅ Drop traité avec succès");
+                        log.info("Drop traité avec succès");
                     } else {
-                        System.err.println("🔧 ERROR: Format de données invalide: " + data);
+                        log.error("Format de données invalide: {}", data);
                         dtde.getDropTargetContext().dropComplete(false);
                     }
                 } else {
-                    System.err.println("🔧 ERROR: DataFlavor non supporté");
+                    log.error("DataFlavor non supporté");
                     dtde.getDropTargetContext().dropComplete(false);
                 }
             } catch (Exception e) {
-                System.err.println("🔧 ERROR: Erreur durant le drop: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Erreur durant le drop", e);
                 dtde.getDropTargetContext().dropComplete(false);
             } finally {
                 // Restaurer l'apparence
@@ -720,42 +725,39 @@ public class PlanningPanel extends JPanel {
             }
         }
         
-        private void handleResourceDrop(Long resourceId) {
+        private void handleResourceDrop(Long resourceId, Point dropPoint) {
             SwingUtilities.invokeLater(() -> {
                 try {
-                    System.out.println("🔧 DEBUG: Traitement du drop pour ressource ID: " + resourceId);
-                    
+                    log.debug("Traitement du drop pour ressource ID: {}", resourceId);
+
                     Resource droppedResource = resources.stream()
                             .filter(r -> r.getId().equals(resourceId))
                             .findFirst()
                             .orElse(null);
-                    
+
                     if (droppedResource == null) {
-                        System.err.println("🔧 ERROR: Ressource non trouvée avec ID: " + resourceId);
-                        JOptionPane.showMessageDialog(PlanningPanel.this, 
+                        log.error("Ressource non trouvée avec ID: {}", resourceId);
+                        JOptionPane.showMessageDialog(PlanningPanel.this,
                             "Ressource non trouvée", "Erreur", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    
-                    System.out.println("🔧 DEBUG: Ressource trouvée: " + droppedResource.getNom());
-                    System.out.println("🔧 DEBUG: Date cible: " + targetCell.getDate());
-                    
-                    // Vérifier s'il y a déjà une intervention ce jour pour cette ressource
-                    Intervention existingIntervention = findExistingIntervention(targetCell.getDate(), droppedResource);
-                    
-                    if (existingIntervention != null) {
-                        System.out.println("🔧 DEBUG: Intervention existante trouvée, ajout de la ressource");
-                        // Ajouter la ressource à l'intervention existante
-                        addResourceToExistingIntervention(existingIntervention, droppedResource);
+
+                    log.debug("Ressource trouvée: {}", droppedResource.getNom());
+                    log.debug("Date cible: {}", targetCell.getDate());
+
+                    Component comp = targetCell.getComponentAt(dropPoint);
+                    InterventionCard card = (InterventionCard) SwingUtilities.getAncestorOfClass(InterventionCard.class, comp);
+
+                    if (card != null) {
+                        log.debug("Drop sur intervention existante");
+                        addResourceToExistingIntervention(card.getIntervention(), droppedResource);
                     } else {
-                        System.out.println("🔧 DEBUG: Aucune intervention existante, création d'une nouvelle");
-                        // Créer une nouvelle intervention
+                        log.debug("Drop hors intervention, création d'une nouvelle");
                         createNewIntervention(targetCell.getDate(), droppedResource);
                     }
-                    
+
                 } catch (Exception e) {
-                    System.err.println("🔧 ERROR: Erreur handleResourceDrop: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Erreur handleResourceDrop", e);
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la création de l'intervention: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -766,7 +768,7 @@ public class PlanningPanel extends JPanel {
         private void handleInterventionDrop(Long interventionId) {
             SwingUtilities.invokeLater(() -> {
                 try {
-                    System.out.println("🔧 DEBUG: Déplacement de l'intervention ID: " + interventionId);
+                    log.debug("Déplacement de l'intervention ID: {}", interventionId);
 
                     Intervention movedIntervention = interventions.stream()
                             .filter(i -> i.getId().equals(interventionId))
@@ -774,7 +776,7 @@ public class PlanningPanel extends JPanel {
                             .orElse(null);
 
                     if (movedIntervention == null) {
-                        System.err.println("🔧 ERROR: Intervention non trouvée avec ID: " + interventionId);
+                        log.error("Intervention non trouvée avec ID: {}", interventionId);
                         JOptionPane.showMessageDialog(PlanningPanel.this,
                             "Intervention non trouvée", "Erreur", JOptionPane.ERROR_MESSAGE);
                         return;
@@ -796,8 +798,7 @@ public class PlanningPanel extends JPanel {
                         "Intervention déplacée au " + targetDate,
                         "Succès", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception e) {
-                    System.err.println("🔧 ERROR: Erreur déplacement intervention: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Erreur déplacement intervention", e);
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors du déplacement: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -805,17 +806,9 @@ public class PlanningPanel extends JPanel {
             });
         }
         
-        private Intervention findExistingIntervention(LocalDate date, Resource resource) {
-            return interventions.stream()
-                    .filter(i -> i.getDateDebut() != null && 
-                                i.getDateDebut().toLocalDate().equals(date))
-                    .findFirst() // CORRECTION: Chercher n'importe quelle intervention ce jour, pas seulement celles avec cette ressource
-                    .orElse(null);
-        }
-        
         private void addResourceToExistingIntervention(Intervention intervention, Resource newResource) {
             // Vérifier si la ressource n'est pas déjà dans l'intervention
-            if (intervention.getRessources() != null && 
+            if (intervention.getRessources() != null &&
                 intervention.getRessources().stream().anyMatch(r -> r.getId().equals(newResource.getId()))) {
                 JOptionPane.showMessageDialog(PlanningPanel.this,
                     "Cette ressource est déjà affectée à cette intervention",
@@ -833,15 +826,15 @@ public class PlanningPanel extends JPanel {
             try {
                 InterventionService interventionService = ServiceFactory.getInterventionService();
                 interventionService.saveIntervention(intervention);
-                
+
                 // Rafraîchir l'affichage
                 refreshPlanning();
-                
+
                 JOptionPane.showMessageDialog(PlanningPanel.this,
                     "Ressource " + newResource.getNom() + " ajoutée à l'intervention existante",
                     "Succès", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception e) {
-                System.err.println("🔧 ERROR: Erreur sauvegarde intervention: " + e.getMessage());
+                log.error("Erreur sauvegarde intervention", e);
                 JOptionPane.showMessageDialog(PlanningPanel.this,
                     "Erreur lors de la sauvegarde: " + e.getMessage(),
                     "Erreur", JOptionPane.ERROR_MESSAGE);
@@ -849,7 +842,7 @@ public class PlanningPanel extends JPanel {
         }
         
         private void createNewIntervention(LocalDate date, Resource resource) {
-            System.out.println("🔧 DEBUG: Création d'une nouvelle intervention");
+            log.debug("Création d'une nouvelle intervention");
             
             // CORRECTION: Créer des heures par défaut plus sensées
             LocalDateTime dateDebut = date.atTime(8, 0); // 8h00
@@ -867,7 +860,7 @@ public class PlanningPanel extends JPanel {
             
             if (dialog.isConfirmed()) {
                 Intervention newIntervention = dialog.getIntervention();
-                System.out.println("🔧 DEBUG: Nouvelle intervention confirmée: " + newIntervention.getTitre());
+                log.debug("Nouvelle intervention confirmée: {}", newIntervention.getTitre());
                 
                 // Sauvegarder
                 try {
@@ -888,7 +881,7 @@ public class PlanningPanel extends JPanel {
                     }
                     
                     interventionService.saveIntervention(newIntervention);
-                    System.out.println("✅ Intervention sauvegardée avec succès");
+                    log.info("Intervention sauvegardée avec succès");
                     
                     // Rafraîchir l'affichage
                     refreshPlanning();
@@ -897,15 +890,33 @@ public class PlanningPanel extends JPanel {
                         "Intervention créée avec succès !",
                         "Succès", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception e) {
-                    System.err.println("🔧 ERROR: Erreur création intervention: " + e.getMessage());
-                    e.printStackTrace();
+                    log.error("Erreur création intervention", e);
                     JOptionPane.showMessageDialog(PlanningPanel.this,
                         "Erreur lors de la sauvegarde: " + e.getMessage(),
                         "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                System.out.println("🔧 DEBUG: Création d'intervention annulée");
+                log.debug("Création d'intervention annulée");
             }
         }
+    }
+
+    /** Change the active time scale for the planning board. */
+    public void setTimeScale(int minutesPerCell) {
+        if (planningGridPanel != null) {
+            planningGridPanel.setTimeScale(minutesPerCell);
+        }
+    }
+
+    /** Enable or disable multi-selection on the board. */
+    public void enableMultiSelection(boolean enable) {
+        if (planningGridPanel != null) {
+            planningGridPanel.enableMultiSelection(enable);
+        }
+    }
+
+    /** Apply current snap increment to a time value. */
+    public LocalDateTime applySnap(LocalDateTime time) {
+        return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
     }
 }

@@ -116,6 +116,13 @@ mvn clean package jpackage:jpackage
 - **Entrée** : Afficher les détails
 - **Clic droit** : Menu contextuel complet
 
+### Gestes UI
+
+- **Ctrl+Molette** : zoom horaire (5/15/30/60 min)
+- **Poignées haut/bas** : redimensionner un créneau
+- **Alt+Drag** : dupliquer une intervention
+- **Shift+Click / Glisser** : sélection multiple
+
 ### Menu Contextuel
 
 - ✏️ **Modifier** - Édition de l'intervention
