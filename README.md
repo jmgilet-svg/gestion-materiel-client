@@ -15,6 +15,8 @@ Application desktop moderne en Java Swing pour la gestion de matériel et réser
 - **Menu contextuel** complet sur toutes les entités
 - **Server-Sent Events** pour les notifications temps réel
 - **Cartes interventions** enrichies avec statuts colorés
+- **Filtrage des ressources par type** et ajustement visuel des horaires
+
 
 ## 🛠️ Technologies
 

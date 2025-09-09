@@ -11,6 +11,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 
 /**
  * Carte d'intervention améliorée avec design riche et informations complètes
@@ -23,6 +26,12 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     private boolean highlighted = false; // Pour le feedback DnD
     private boolean dragging = false;
     private DragSource dragSource;
+    private JLabel timeLabel;
+    private JLabel durationLabel;
+    private int pressY;
+    private boolean resizingStart;
+    private boolean resizingEnd;
+
     
     // Constantes de design
     private static final Color BACKGROUND_NORMAL = Color.WHITE;
@@ -107,24 +116,24 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
         if (intervention.getDateDebut() != null && intervention.getDateFin() != null) {
             String heureDebut = intervention.getDateDebut().format(timeFormatter);
             String heureFin = intervention.getDateFin().format(timeFormatter);
-            
-            JLabel timeLabel = new JLabel(heureDebut + " - " + heureFin);
+
+            timeLabel = new JLabel(heureDebut + " - " + heureFin);
             timeLabel.setFont(TIME_FONT);
             timeLabel.setForeground(Color.decode("#6B7280"));
             timeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-            
+
             // Durée
             long dureeMinutes = java.time.Duration.between(
                 intervention.getDateDebut(), intervention.getDateFin()).toMinutes();
             String dureeText = formatDuree(dureeMinutes);
-            
-            JLabel dureeLabel = new JLabel("(" + dureeText + ")");
-            dureeLabel.setFont(DETAIL_FONT);
-            dureeLabel.setForeground(Color.decode("#9CA3AF"));
-            dureeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-            
+
+            durationLabel = new JLabel("(" + dureeText + ")");
+            durationLabel.setFont(DETAIL_FONT);
+            durationLabel.setForeground(Color.decode("#9CA3AF"));
+            durationLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
             panel.add(timeLabel);
-            panel.add(dureeLabel);
+            panel.add(durationLabel);
         }
         
         return panel;
@@ -291,6 +300,19 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
                 hovered = false;
                 updateAppearance();
             }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                pressY = e.getY();
+                resizingStart = e.getY() < 20;
+                resizingEnd = e.getY() > getHeight() - 20;
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                resizingStart = false;
+                resizingEnd = false;
+            }
             
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -310,7 +332,14 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
                 }
             }
         });
-        
+
+        addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                handleResizeDrag(e);
+            }
+        });
+
         // Support des raccourcis clavier
         setFocusable(true);
         addKeyListener(new java.awt.event.KeyAdapter() {
@@ -319,6 +348,43 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
                 handleKeyPress(e);
             }
         });
+    }
+
+    private void handleResizeDrag(MouseEvent e) {
+        if (!resizingStart && !resizingEnd) {
+            return;
+        }
+        int dy = e.getY() - pressY;
+        int steps = dy / 10; // 10px -> 15min
+        if (steps == 0) return;
+
+        if (resizingStart) {
+            LocalDateTime start = intervention.getDateDebut().plusMinutes(steps * 15);
+            if (start.isBefore(intervention.getDateFin().minusMinutes(15))) {
+                intervention.setDateDebut(start);
+                pressY += steps * 10;
+                refreshTimeDisplay();
+            }
+        } else if (resizingEnd) {
+            LocalDateTime end = intervention.getDateFin().plusMinutes(steps * 15);
+            if (end.isAfter(intervention.getDateDebut().plusMinutes(15))) {
+                intervention.setDateFin(end);
+                pressY += steps * 10;
+                refreshTimeDisplay();
+            }
+        }
+    }
+
+    private void refreshTimeDisplay() {
+        if (timeLabel != null && durationLabel != null &&
+            intervention.getDateDebut() != null && intervention.getDateFin() != null) {
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            String start = intervention.getDateDebut().format(timeFormatter);
+            String end = intervention.getDateFin().format(timeFormatter);
+            timeLabel.setText(start + " - " + end);
+            long minutes = Duration.between(intervention.getDateDebut(), intervention.getDateFin()).toMinutes();
+            durationLabel.setText("(" + formatDuree(minutes) + ")");
+        }
     }
     
     private void updateAppearance() {
@@ -365,7 +431,8 @@ public class InterventionCard extends JPanel implements DragGestureListener, Dra
     // Implémentation DragGestureListener
     @Override
     public void dragGestureRecognized(DragGestureEvent dge) {
-        if (intervention.getId() == null) {
+
+        if (intervention.getId() == null || resizingStart || resizingEnd) {
             return;
         }
         dragging = true;

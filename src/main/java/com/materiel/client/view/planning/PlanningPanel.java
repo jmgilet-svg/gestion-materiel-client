@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.stream.Collectors;
+
 
 /**
  * Panel principal du planning hebdomadaire avec drag & drop intelligent
@@ -43,12 +45,15 @@ public class PlanningPanel extends JPanel {
     private LocalDate currentWeekStart;
     private JLabel weekLabel; // Référence pour la mise à jour
     
+    private List<Resource> allResources; // liste complète pour filtrage
     private List<Resource> resources;
     private List<Intervention> interventions;
     private Map<String, DayCell> dayCells; // "resourceId-dayIndex" -> DayCell
+    private JComboBox<Object> typeFilterCombo;
     
     public PlanningPanel() {
         currentWeekStart = getStartOfWeek(LocalDate.now());
+        allResources = new ArrayList<>();
         resources = new ArrayList<>();
         interventions = new ArrayList<>();
         dayCells = new HashMap<>();
@@ -121,6 +126,24 @@ public class PlanningPanel extends JPanel {
         weekLabel = new JLabel(formatWeekRange());
         weekLabel.setFont(weekLabel.getFont().deriveFont(Font.BOLD, 16f));
 
+        // Filtre des types de ressources
+        typeFilterCombo = new JComboBox<>();
+        typeFilterCombo.addItem("Toutes");
+        for (Resource.ResourceType t : Resource.ResourceType.values()) {
+            typeFilterCombo.addItem(t);
+        }
+        typeFilterCombo.addActionListener(e -> applyResourceFilter());
+        typeFilterCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                if (value instanceof Resource.ResourceType type) {
+                    value = type.getDisplayName();
+                }
+                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            }
+        });
+
+
         navigationPanel.add(prevWeekBtn);
         navigationPanel.add(Box.createHorizontalStrut(10));
         navigationPanel.add(weekLabel);
@@ -130,6 +153,9 @@ public class PlanningPanel extends JPanel {
         navigationPanel.add(todayBtn);
         navigationPanel.add(Box.createHorizontalStrut(10));
         navigationPanel.add(dayViewToggle);
+        navigationPanel.add(Box.createHorizontalStrut(20));
+        navigationPanel.add(typeFilterCombo);
+
         
         // Actions
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -279,23 +305,35 @@ public class PlanningPanel extends JPanel {
                 ResourceService resourceService = ServiceFactory.getResourceService();
                 InterventionService interventionService = ServiceFactory.getInterventionService();
                 
-                resources = resourceService.getAllResources();
+                allResources = resourceService.getAllResources();
                 interventions = interventionService.getInterventionsByDateRange(currentWeekStart, currentWeekStart.plusDays(6));
-                
-                System.out.println("🔧 DEBUG: " + resources.size() + " ressources chargées");
+
+                System.out.println("🔧 DEBUG: " + allResources.size() + " ressources chargées");
                 System.out.println("🔧 DEBUG: " + interventions.size() + " interventions chargées");
-                
-                updateResourceList();
-                updatePlanningGrid();
-                updateInterventionsDisplay();
+                applyResourceFilter();
             } catch (Exception e) {
                 System.err.println("🔧 ERROR: Erreur lors du chargement: " + e.getMessage());
                 e.printStackTrace();
-                JOptionPane.showMessageDialog(this, 
+                JOptionPane.showMessageDialog(this,
                     "Erreur lors du chargement des données: " + e.getMessage(),
                     "Erreur", JOptionPane.ERROR_MESSAGE);
             }
         });
+    }
+
+    private void applyResourceFilter() {
+        Object selected = typeFilterCombo != null ? typeFilterCombo.getSelectedItem() : null;
+        if (selected instanceof Resource.ResourceType type) {
+            resources = allResources.stream()
+                    .filter(r -> r.getType() == type)
+                    .collect(Collectors.toList());
+        } else {
+            resources = new ArrayList<>(allResources);
+        }
+
+        updateResourceList();
+        updatePlanningGrid();
+        updateInterventionsDisplay();
     }
     
     private void updateResourceList() {
@@ -527,13 +565,45 @@ public class PlanningPanel extends JPanel {
         
         public void addIntervention(Intervention intervention) {
             InterventionCard card = new InterventionCard(intervention);
-            card.setAlignmentX(Component.CENTER_ALIGNMENT);
+            card.setAlignmentX(Component.LEFT_ALIGNMENT);
             card.setMaximumSize(new Dimension(DAY_COLUMN_WIDTH - 10, 60));
-            
+
             interventionCards.add(card);
-            add(card);
-            add(Box.createVerticalStrut(2));
-            
+            // Trier par date de début décroissante (plus récente en premier)
+            interventionCards.sort((a, b) -> {
+                LocalDateTime sa = a.getIntervention().getDateDebut();
+                LocalDateTime sb = b.getIntervention().getDateDebut();
+                if (sa == null || sb == null) return 0;
+                return sb.compareTo(sa);
+            });
+
+            // Reconstuire l'affichage avec décalage si chevauchement
+            removeAll();
+            for (int i = 0; i < interventionCards.size(); i++) {
+                InterventionCard c = interventionCards.get(i);
+                int offset = 0;
+                LocalDateTime start = c.getIntervention().getDateDebut();
+                LocalDateTime end = c.getIntervention().getDateFin();
+                for (int j = 0; j < i; j++) {
+                    InterventionCard prev = interventionCards.get(j);
+                    LocalDateTime ps = prev.getIntervention().getDateDebut();
+                    LocalDateTime pe = prev.getIntervention().getDateFin();
+                    if (start != null && end != null && ps != null && pe != null) {
+                        boolean overlap = !end.isBefore(ps) && !start.isAfter(pe);
+                        if (overlap) {
+                            offset += 20; // décale vers la droite
+                        }
+                    }
+                }
+                if (offset > 0) {
+                    c.setBorder(BorderFactory.createEmptyBorder(0, offset, 0, 0));
+                } else {
+                    c.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+                }
+                add(c);
+                add(Box.createVerticalStrut(2));
+            }
+
             revalidate();
             repaint();
         }
