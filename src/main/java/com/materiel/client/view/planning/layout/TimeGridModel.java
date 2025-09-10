@@ -2,49 +2,28 @@ package com.materiel.client.view.planning.layout;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
-import com.materiel.client.view.ui.UIConstants;
+/**
+ * Shared model to translate between time and pixel positions for the planning grid.
+ * All rounding of X positions happens inside this model.
+ */
+public interface TimeGridModel {
 
-/** Shared model to translate between time and pixel positions for the planning grid. */
-public class TimeGridModel {
-    private final int hourWidth;
-    private final int leftGutter;
-
-    public TimeGridModel(int hourWidth) {
-        this.hourWidth = hourWidth;
-        this.leftGutter = UIConstants.LEFT_GUTTER_WIDTH;
-    }
-
-    /** Width in pixels of the frozen left gutter. */
-    public int getLeftGutterWidth() {
-        return leftGutter;
-    }
+    /** @return width in pixels of the frozen left gutter. */
+    int getLeftGutterWidth();
 
     /**
-     * Compute x coordinates of hour boundaries for the given day.
-     * The provided monday is currently ignored but kept for future week layouts.
+     * Compute X coordinates of week day column boundaries including the left gutter offset.
+     *
+     * @param weekStart first day of the week (typically Monday)
+     * @return array of x positions for each day boundary
      */
-    public int[] getDayColumnXs(LocalDate monday) {
-        int[] xs = new int[25];
-        xs[0] = leftGutter;
-        for (int h = 1; h <= 24; h++) {
-            xs[h] = leftGutter + h * hourWidth;
-        }
-        return xs;
-    }
+    int[] getDayColumnXs(LocalDate weekStart);
 
-    /** Convert a time value to a y pixel coordinate. All rounding happens here. */
-    public int timeToY(LocalDateTime t) {
-        int minutes = t.getHour() * 60 + t.getMinute();
-        return Math.round(minutes * (UIConstants.ROW_BASE_HEIGHT / 60f));
-    }
+    /** Convert a time value to an X pixel coordinate. */
+    int timeToX(LocalDateTime t);
 
-    /** Convert a y pixel coordinate back to a time rounded to the nearest minute. */
-    public LocalDateTime yToTime(int y) {
-        int minutes = Math.round(y * 60f / UIConstants.ROW_BASE_HEIGHT);
-        int hour = minutes / 60;
-        int minute = minutes % 60;
-        return LocalDateTime.of(LocalDate.now(), LocalTime.of(hour, minute));
-    }
+    /** Convert an X pixel coordinate back to a time rounded to the nearest minute. */
+    LocalDateTime xToTime(int x);
 }
+
