@@ -60,5 +60,11 @@ public class SimpleTimeGridModel implements TimeGridModel {
                 .plusDays(dayIndex);
         return LocalDateTime.of(base, LocalTime.of(hour, minute));
     }
+
+	@Override
+	public int getContentWidth() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }
 

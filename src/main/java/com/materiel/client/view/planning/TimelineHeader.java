@@ -1,76 +1,77 @@
 package com.materiel.client.view.planning;
 
-import com.materiel.client.view.planning.layout.TimeGridModel;
-import com.materiel.client.view.ui.UIConstants;
-
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
 
+import javax.swing.JComponent;
+
+import com.materiel.client.view.planning.layout.TimeGridModel;
+import com.materiel.client.view.ui.UIConstants;
+
 /** Header displaying day columns aligned with the planning grid. */
-public class TimelineHeader extends JComponent implements ChangeListener {
-    private final TimeGridModel model;
-    private JViewport viewport;
+public final class TimelineHeader extends JComponent {
+    private final TimeGridModel grid;
+    private LocalDate weekStart;
+    private static final int HEADER_HEIGHT = 32;
+    private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("dd/MM");
 
-    public TimelineHeader(TimeGridModel model) {
-        this.model = model;
-        setPreferredSize(new Dimension(0, UIConstants.ROW_BASE_HEIGHT));
+    public TimelineHeader(TimeGridModel grid, LocalDate weekStart) {
+        this.grid = grid;
+        this.weekStart = weekStart.with(DayOfWeek.MONDAY);
+        setPreferredSize(new Dimension(grid.getLeftGutterWidth()+grid.getContentWidth(), HEADER_HEIGHT));
+        setFont(new Font("Inter", Font.BOLD, 12));
+        setOpaque(true);
     }
 
-    /** Attach this header to the same viewport as the planning board for sync. */
-    public void attachToViewport(JViewport vp) {
-        if (this.viewport != null) {
-            this.viewport.removeChangeListener(this);
+    public void setWeek(LocalDate ws) {
+        this.weekStart = ws.with(DayOfWeek.MONDAY);
+        revalidate(); repaint();
+    }
+
+    @Override protected void paintComponent(Graphics g0) {
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        // fond
+        g.setColor(new Color(0xF3F6F9));
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        // cellule vide au-dessus de la gouttière "Ressources"
+        g.setColor(new Color(0xE0E6EB));
+        g.drawRect(0, 0, UIConstants.LEFT_GUTTER_WIDTH - 1, getHeight() - 1);
+
+        // colonnes (mêmes X que la grille)
+        int[] xs = grid.getDayColumnXs(weekStart);
+        g.setColor(new Color(0xE0E6EB));
+        for (int x : xs) g.drawLine(x, 0, x, getHeight());
+
+        // libellés
+        g.setColor(new Color(0x1A1F36));
+        for (int d = 0; d < 7; d++) {
+            int x1 = xs[d];
+            int x2 = xs[d + 1];
+            LocalDate day = weekStart.plusDays(d);
+            String label = day.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.FRANCE) + " " + DF.format(day);
+            drawCentered(g, label, x1, x2, getHeight());
         }
-        this.viewport = vp;
-        if (vp != null) {
-            vp.addChangeListener(this);
-        }
+        g.dispose();
     }
 
-    /** Access to underlying grid model, mainly for testing. */
-    public TimeGridModel getModel() {
-        return model;
-    }
-
-    @Override
-    public void stateChanged(ChangeEvent e) {
-        repaint();
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g.create();
-
-        int h = getHeight();
-        int gutter = model.getLeftGutterWidth();
-        // Empty header cell over the resource column
-        g2.setColor(getBackground());
-        g2.fillRect(0, 0, gutter, h);
-        g2.setColor(Color.GRAY);
-        g2.drawRect(0, 0, gutter, h - 1);
-
-        int[] xs = model.getDayColumnXs(null);
-        LocalDate d = model.xToTime(gutter).toLocalDate();
-        FontMetrics fm = g2.getFontMetrics();
-        for (int i = 0; i < xs.length; i++) {
-            int x = xs[i];
-            g2.drawLine(x, 0, x, h);
-            if (i + 1 < xs.length) {
-                int next = xs[i + 1];
-                String label = d.plusDays(i).getDayOfWeek()
-                        .getDisplayName(TextStyle.SHORT, Locale.getDefault());
-                int textX = x + (next - x - fm.stringWidth(label)) / 2;
-                int textY = (h + fm.getAscent()) / 2 - 2;
-                g2.drawString(label, textX, textY);
-            }
-        }
-
-        g2.dispose();
+    private static void drawCentered(Graphics2D g, String text, int x1, int x2, int h) {
+        FontMetrics fm = g.getFontMetrics();
+        int w = fm.stringWidth(text);
+        int x = x1 + Math.max(0, (x2 - x1 - w) / 2);
+        int y = (h + fm.getAscent() - fm.getDescent()) / 2;
+        g.drawString(text, x, y);
     }
 }

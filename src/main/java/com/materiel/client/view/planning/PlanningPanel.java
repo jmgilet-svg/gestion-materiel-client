@@ -19,6 +19,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.dnd.*;
 import java.awt.datatransfer.*;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -211,9 +212,14 @@ public class PlanningPanel extends JPanel {
     }
     
     private PlanningBoard createPlanningGridPanel() {
-        PlanningBoard panel = new PlanningBoard();
+    	LocalDate semaine = LocalDate.now().with(DayOfWeek.MONDAY);
+        PlanningBoard panel = new PlanningBoard(semaine);
         panel.setLayout(new BorderLayout());
         panel.setBackground(Color.WHITE);
+        TimelineHeader header = new TimelineHeader(panel.getTimeGridModel(), semaine);
+
+        JScrollPane sp = new JScrollPane(panel);
+        sp.setColumnHeaderView(header);
         // Header avec les jours de la semaine
         JPanel headerPanel = createWeekHeaderPanel();
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -930,19 +936,19 @@ public class PlanningPanel extends JPanel {
     /** Change the active time scale for the planning board. */
     public void setTimeScale(int minutesPerCell) {
         if (planningGridPanel != null) {
-            planningGridPanel.setTimeScale(minutesPerCell);
+//            planningGridPanel.setTimeScale(minutesPerCell);
         }
     }
 
     /** Enable or disable multi-selection on the board. */
     public void enableMultiSelection(boolean enable) {
         if (planningGridPanel != null) {
-            planningGridPanel.enableMultiSelection(enable);
+//            planningGridPanel.enableMultiSelection(enable);
         }
     }
 
     /** Apply current snap increment to a time value. */
-    public LocalDateTime applySnap(LocalDateTime time) {
-        return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
-    }
+//    public LocalDateTime applySnap(LocalDateTime time) {
+//        return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
+//    }
 }
