@@ -2,8 +2,6 @@
 package com.materiel.client.view.components;
 
 import com.materiel.client.model.Resource;
-import com.materiel.client.service.ServiceFactory;
-import com.materiel.client.service.InterventionService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,8 +9,6 @@ import java.awt.dnd.*;
 import java.awt.datatransfer.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * Carte représentant une ressource avec support drag & drop et détection de conflits
@@ -31,7 +27,6 @@ public class ResourceCard extends JPanel implements DragGestureListener, DragSou
     private static final Color COLOR_OCCUPIED = Color.decode("#F59E0B");       // Orange - Occupé
     private static final Color COLOR_CONFLICT = Color.decode("#EF4444");       // Rouge - Conflit
     private static final Color COLOR_UNAVAILABLE = Color.decode("#6B7280");    // Gris - Indisponible
-    private static final Color COLOR_BORDER_NORMAL = Color.decode("#E5E7EB");  // Bordure normale
     private static final Color COLOR_BORDER_HOVER = Color.decode("#3B82F6");   // Bordure hover
     private static final Color COLOR_BACKGROUND_HOVER = Color.decode("#F8FAFC");
     

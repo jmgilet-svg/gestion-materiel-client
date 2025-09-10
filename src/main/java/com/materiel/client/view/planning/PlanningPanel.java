@@ -3,7 +3,6 @@ package com.materiel.client.view.planning;
 
 import com.materiel.client.model.Resource;
 import com.materiel.client.model.Intervention;
-import com.materiel.client.model.Client;
 import com.materiel.client.service.ServiceFactory;
 import com.materiel.client.service.ResourceService;
 import com.materiel.client.service.InterventionService;
