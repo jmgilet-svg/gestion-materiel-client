@@ -24,10 +24,11 @@ public class PlanningBoard extends JPanel {
     private boolean multiSelectionEnabled = false;
     private final Set<Long> selectedIds = new HashSet<>();
     private Rectangle selectionRect;
-    private TimeGridModel scale;
+    private TimeGridModel model;
     private final Map<Intervention, Rectangle> tileBounds = new LinkedHashMap<>();
     private final List<Intervention> zOrder = new ArrayList<>();
-    private final List<Integer> rowLaneCounts = new ArrayList<>();
+    private final List<Integer> rowHeights = new ArrayList<>();
+    private final List<Integer> rowY = new ArrayList<>();
 
     public PlanningBoard() {
         setBackground(Color.WHITE);
@@ -106,14 +107,14 @@ public class PlanningBoard extends JPanel {
 
     /** Set shared time grid model. */
     public void setTimeGridModel(TimeGridModel model) {
-        this.scale = model;
+        this.model = model;
         revalidate();
         repaint();
     }
 
     /** Access to current grid model, mainly for tests. */
     public TimeGridModel getTimeGridModel() {
-        return scale;
+        return model;
     }
 
     /** Update cached tile bounds and z-order. */
@@ -122,38 +123,73 @@ public class PlanningBoard extends JPanel {
         tileBounds.putAll(bounds);
         zOrder.clear();
         zOrder.addAll(bounds.keySet());
+        rowHeights.clear();
+        rowY.clear();
+        rowY.add(0);
+        rowHeights.add(UIConstants.ROW_BASE_HEIGHT);
         revalidate();
         repaint();
     }
 
     /**
      * Compute rectangles from lane metadata and update internal cache.
+     * This variant is primarily used by tests which pre-compute lanes.
      */
-    public void layoutTiles(Map<Intervention, LaneLayout.Lane> lanes, TimeGridModel scale) {
-        this.scale = scale;
+    public void layoutTiles(Map<Intervention, LaneLayout.Lane> lanes, TimeGridModel model) {
+        this.model = model;
         tileBounds.clear();
         zOrder.clear();
+        rowHeights.clear();
+        rowY.clear();
+        int rowUsableWidth = model.getContentWidth();
+        int maxCols = lanes.values().stream()
+                .mapToInt(l -> l.track + l.index * l.tracks)
+                .max().orElse(-1) + 1;
+        int rowH = LaneLayout.computeRowHeight(maxCols, rowUsableWidth);
+        rowY.add(0);
+        rowHeights.add(rowH);
         for (Map.Entry<Intervention, LaneLayout.Lane> e : lanes.entrySet()) {
             Intervention in = e.getKey();
             LaneLayout.Lane lane = e.getValue();
             Rectangle r = LaneLayout.computeTileBounds(
-                    in.getDateDebut(), in.getDateFin(), lane, scale, 0);
+                    in.getDateDebut(), in.getDateFin(), lane, model, 0);
             tileBounds.put(in, r);
             zOrder.add(in);
         }
-        rowLaneCounts.clear();
-        rowLaneCounts.add(lanes.size());
         revalidate();
         repaint();
     }
 
     /**
-     * Update lane counts for each resource to compute preferred height.
+     * Layout interventions grouped by resource rows. Each list in {@code rows}
+     * represents a resource and will be wrapped vertically when necessary.
      */
-    public void setLaneCounts(List<Integer> counts) {
-        rowLaneCounts.clear();
-        if (counts != null) {
-            rowLaneCounts.addAll(counts);
+    public void layoutRows(List<List<Intervention>> rows) {
+        if (model == null) {
+            return;
+        }
+        tileBounds.clear();
+        zOrder.clear();
+        rowHeights.clear();
+        rowY.clear();
+        int y = 0;
+        int rowUsableWidth = model.getContentWidth();
+        for (List<Intervention> list : rows) {
+            Map<Intervention, LaneLayout.Lane> lanes = LaneLayout.computeLanes(
+                    new ArrayList<>(list), Intervention::getDateDebut, Intervention::getDateFin, rowUsableWidth);
+            int maxCols = lanes.values().stream()
+                    .mapToInt(l -> l.track + l.index * l.tracks)
+                    .max().orElse(-1) + 1;
+            int rowH = LaneLayout.computeRowHeight(maxCols, rowUsableWidth);
+            rowY.add(y);
+            rowHeights.add(rowH);
+            for (Intervention in : list) {
+                Rectangle r = LaneLayout.computeTileBounds(
+                        in.getDateDebut(), in.getDateFin(), lanes.get(in), model, y);
+                tileBounds.put(in, r);
+                zOrder.add(in);
+            }
+            y += rowH;
         }
         revalidate();
         repaint();
@@ -161,14 +197,13 @@ public class PlanningBoard extends JPanel {
 
     @Override
     public Dimension getPreferredSize() {
-        if (scale == null) {
+        if (model == null) {
             return super.getPreferredSize();
         }
-        int width = scale.getLeftGutterWidth() + scale.getContentWidth();
-        int rowUsableWidth = scale.getContentWidth();
+        int width = model.getLeftGutterWidth() + model.getContentWidth();
         int height = 0;
-        for (int laneCount : rowLaneCounts) {
-            height += LaneLayout.computeRowHeight(laneCount, rowUsableWidth);
+        for (int h : rowHeights) {
+            height += h;
         }
         return new Dimension(width, height);
     }
@@ -245,9 +280,9 @@ public class PlanningBoard extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
-        if (scale != null) {
+        if (model != null) {
             g2.setColor(Color.LIGHT_GRAY);
-            int[] xs = scale.getDayColumnXs(LocalDate.now());
+            int[] xs = model.getDayColumnXs(null);
             for (int x : xs) {
                 g2.drawLine(x, 0, x, getHeight());
             }

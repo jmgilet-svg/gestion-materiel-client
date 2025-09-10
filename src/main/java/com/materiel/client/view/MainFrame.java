@@ -43,10 +43,11 @@ public class MainFrame extends JFrame {
     // TODO: Ajouter autres panels (Commandes, BL, Factures)
     
     public MainFrame() {
+        System.out.println("FIX_WRAP_AND_ALIGN_APPLIED");
         initComponents();
         setupFrame();
         setupEventListeners();
-        
+
         // Afficher le planning par défaut
         showPlanningPanel();
     }
