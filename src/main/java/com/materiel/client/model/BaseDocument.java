@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.materiel.client.util.DocumentTotalsCalculator;
 
 /**
  * Classe de base pour tous les documents commerciaux.
@@ -46,10 +47,9 @@ public abstract class BaseDocument {
      * Recalcule les totaux à partir des lignes.
      */
     public void recalcTotals() {
-        totalHT = lines.stream().map(DocumentLine::getTotalHT)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        totalTVA = lines.stream().map(DocumentLine::getTotalTVA)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        totalTTC = totalHT.add(totalTVA);
+        DocumentTotalsCalculator.Totaux t = DocumentTotalsCalculator.compute(lines);
+        this.totalHT = t.totalHT;
+        this.totalTVA = t.totalTVA;
+        this.totalTTC = t.totalTTC;
     }
 }
