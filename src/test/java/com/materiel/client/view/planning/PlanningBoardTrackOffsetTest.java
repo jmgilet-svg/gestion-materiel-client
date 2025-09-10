@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.awt.Point;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -20,7 +21,7 @@ public class PlanningBoardTrackOffsetTest {
     @Test
     void tilesAreOffsetByTrack() {
         PlanningBoard board = new PlanningBoard();
-        TimeGridModel scale = new DefaultTimeGridModel(100);
+        TimeGridModel scale = new DefaultTimeGridModel(LocalDate.now(), 100);
         Intervention in = new Intervention();
         in.setId(1L);
         in.setDateDebut(LocalDateTime.of(2024,1,1,0,0));

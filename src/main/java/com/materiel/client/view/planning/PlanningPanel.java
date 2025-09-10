@@ -613,7 +613,13 @@ public class PlanningPanel extends JPanel {
                     .collect(Collectors.toList());
             final int gutter = 2;
             final int available = DAY_COLUMN_WIDTH - 10;
-            Map<Intervention, LaneLayout.Lane> map = LaneLayout.computeLanes(ints, available);
+            Map<Intervention, LaneLayout.Lane> map = LaneLayout.computeLanes(
+                    ints,
+                    new LaneLayout.StartEnd<Intervention>() {
+                        @Override public LocalDateTime start(Intervention t) { return t.getDateDebut(); }
+                        @Override public LocalDateTime end(Intervention t) { return t.getDateFin(); }
+                    },
+                    available);
             int y = 0;
             for (InterventionCard c : interventionCards) {
                 LaneLayout.Lane lane = map.get(c.getIntervention());

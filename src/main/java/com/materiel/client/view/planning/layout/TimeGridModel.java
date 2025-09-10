@@ -25,5 +25,8 @@ public interface TimeGridModel {
 
     /** Convert an X pixel coordinate back to a time rounded to the nearest minute. */
     LocalDateTime xToTime(int x);
+
+    /** @return usable content width excluding the left gutter. */
+    int getContentWidth();
 }
 
