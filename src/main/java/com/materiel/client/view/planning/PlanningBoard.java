@@ -3,7 +3,7 @@ package com.materiel.client.view.planning;
 import com.materiel.client.model.Intervention;
 import com.materiel.client.service.InterventionService;
 import com.materiel.client.service.ServiceFactory;
-import com.materiel.client.view.planning.layout.TimeScaleModel;
+import com.materiel.client.view.planning.layout.TimeGridModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,11 +23,8 @@ public class PlanningBoard extends JPanel {
     private boolean multiSelectionEnabled = false;
     private final Set<Long> selectedIds = new HashSet<>();
     private Rectangle selectionRect;
-    private TimeScaleModel scale;
-    // bounding boxes of tiles recomputed on each layout/paint
-    private final Map<Intervention, Rectangle> tileBounds = new HashMap<>();
-    // painting order of tiles (last is on top)
-    private final List<Intervention> zOrder = new ArrayList<>();
+    private TimeGridModel gridModel;
+    private final List<Map.Entry<Intervention, Rectangle>> tileRects = new ArrayList<>();
 
     public PlanningBoard() {
         setBackground(Color.WHITE);
@@ -104,14 +101,14 @@ public class PlanningBoard extends JPanel {
         return zoom;
     }
 
-    /** Set shared time scale model. */
-    public void setTimeScaleModel(TimeScaleModel model) {
-        this.scale = model;
+    /** Set shared time grid model. */
+    public void setTimeGridModel(TimeGridModel model) {
+        this.gridModel = model;
     }
 
-    /** Delegated column boundaries from model. */
-    public int[] getColumnXs(LocalDate day) {
-        return scale != null ? scale.getColumnXs(day) : new int[0];
+    /** Access to current grid model, mainly for tests. */
+    public TimeGridModel getTimeGridModel() {
+        return gridModel;
     }
 
     /** Update cached tile bounds and z-order. */
@@ -192,13 +189,20 @@ public class PlanningBoard extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        if (gridModel != null) {
+            g2.setColor(Color.LIGHT_GRAY);
+            int[] xs = gridModel.getDayColumnXs(LocalDate.now());
+            for (int x : xs) {
+                g2.drawLine(x, 0, x, getHeight());
+            }
+        }
         if (selectionRect != null) {
-            Graphics2D g2 = (Graphics2D) g.create();
             g2.setColor(new Color(59, 130, 246, 80));
             g2.fill(selectionRect);
             g2.setColor(new Color(59, 130, 246));
             g2.draw(selectionRect);
-            g2.dispose();
         }
+        g2.dispose();
     }
 }

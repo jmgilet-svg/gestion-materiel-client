@@ -1,6 +1,6 @@
 package com.materiel.client.view.planning;
 
-import com.materiel.client.view.planning.layout.TimeScaleModel;
+import com.materiel.client.view.planning.layout.TimeGridModel;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -10,11 +10,11 @@ import java.time.LocalDate;
 
 /** Header displaying day columns aligned with the planning grid. */
 public class TimelineHeader extends JComponent implements ChangeListener {
-    private final TimeScaleModel scale;
+    private final TimeGridModel model;
     private JViewport viewport;
 
-    public TimelineHeader(TimeScaleModel scale) {
-        this.scale = scale;
+    public TimelineHeader(TimeGridModel model) {
+        this.model = model;
         setPreferredSize(new Dimension(0, UIConstants.ROW_BASE_HEIGHT));
     }
 
@@ -29,8 +29,9 @@ public class TimelineHeader extends JComponent implements ChangeListener {
         }
     }
 
-    public int[] getColumnXs(LocalDate day) {
-        return scale.getColumnXs(day);
+    /** Access to underlying grid model, mainly for testing. */
+    public TimeGridModel getModel() {
+        return model;
     }
 
     @Override
@@ -43,7 +44,7 @@ public class TimelineHeader extends JComponent implements ChangeListener {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setColor(Color.GRAY);
-        int[] xs = scale.getColumnXs(LocalDate.now());
+        int[] xs = model.getDayColumnXs(LocalDate.now());
         for (int x : xs) {
             g2.drawLine(x, 0, x, getHeight());
         }
