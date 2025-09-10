@@ -59,7 +59,7 @@ public final class LaneLayout {
      * Compute pixel bounds of a tile inside its track. The returned rectangle is
      * relative to the first track; callers must apply the track vertical offset.
      */
-    public static Rectangle computeTileBounds(Intervention i, Lane lane, TimeGridModel scale) {
+    public static Rectangle computeTileBounds(Intervention i, Lane lane, TimeScaleModel scale) {
         int y1 = scale.timeToY(i.getDateDebut());
         int y2 = scale.timeToY(i.getDateFin());
         int height = Math.max(UIConstants.ROW_BASE_HEIGHT, y2 - y1);

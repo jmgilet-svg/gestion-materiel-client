@@ -4,8 +4,8 @@ import com.materiel.client.model.Intervention;
 import com.materiel.client.service.InterventionService;
 import com.materiel.client.service.ServiceFactory;
 import com.materiel.client.view.planning.layout.LaneLayout;
+import com.materiel.client.view.planning.layout.TimeScaleModel;
 import com.materiel.client.view.planning.UIConstants;
-import com.materiel.client.view.planning.layout.TimeGridModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -111,11 +111,6 @@ public class PlanningBoard extends JPanel {
         this.scale = model;
         revalidate();
         repaint();
-      
-    /** Set shared time grid model. */
-    public void setTimeGridModel(TimeGridModel model) {
-        this.gridModel = model;
-        repaint();
     }
 
     /** Access to current grid model, mainly for tests. */
@@ -143,8 +138,38 @@ public class PlanningBoard extends JPanel {
             r.y += trackOffset;
             tileRects.add(new AbstractMap.SimpleEntry<>(e.getKey(), r));
         }
+        // keep height in sync with current tiles without requiring an external call
+        rowLaneCounts.clear();
+        rowLaneCounts.add(lanes.size());
         revalidate();
         repaint();
+    }
+
+    /**
+     * Update lane counts for each resource to compute preferred height.
+     */
+    public void setLaneCounts(List<Integer> counts) {
+        rowLaneCounts.clear();
+        if (counts != null) {
+            rowLaneCounts.addAll(counts);
+        }
+        revalidate();
+        repaint();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        if (scale == null) {
+            return super.getPreferredSize();
+        }
+        int[] xs = scale.getColumnXs(LocalDate.now());
+        int width = xs.length > 0 ? xs[xs.length - 1] : 0;
+        int rowUsableWidth = width - scale.getLeftGutterWidth();
+        int height = 0;
+        for (int laneCount : rowLaneCounts) {
+            height += LaneLayout.computeRowHeight(laneCount, rowUsableWidth);
+        }
+        return new Dimension(width, height);
     }
 
     /**
@@ -202,6 +227,7 @@ public class PlanningBoard extends JPanel {
     /** Clear current selection. */
     public void clearSelection() {
         selectedIds.clear();
+        revalidate();
         repaint();
     }
 
