@@ -3,7 +3,7 @@ package com.materiel.client.view.commandes;
 import com.materiel.client.model.Commande;
 import com.materiel.client.service.ServiceFactory;
 import com.materiel.client.service.CommandeService;
-import com.materiel.client.util.ColorUtils;
+import com.materiel.client.view.ui.ColorUtils;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;

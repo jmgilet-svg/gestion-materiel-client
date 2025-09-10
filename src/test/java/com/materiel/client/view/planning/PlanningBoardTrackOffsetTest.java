@@ -2,8 +2,8 @@ package com.materiel.client.view.planning;
 
 import com.materiel.client.model.Intervention;
 import com.materiel.client.view.planning.layout.LaneLayout;
-import com.materiel.client.view.planning.layout.TimeScaleModel;
-import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.planning.layout.TimeGridModel;
+import com.materiel.client.view.ui.UIConstants;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Point;
@@ -19,7 +19,7 @@ public class PlanningBoardTrackOffsetTest {
     @Test
     void tilesAreOffsetByTrack() {
         PlanningBoard board = new PlanningBoard();
-        TimeScaleModel scale = new TimeScaleModel(100);
+        TimeGridModel scale = new TimeGridModel(100);
         Intervention in = new Intervention();
         in.setId(1L);
         in.setDateDebut(LocalDateTime.of(2024,1,1,0,0));

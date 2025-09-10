@@ -1,4 +1,4 @@
-package com.materiel.client.util;
+package com.materiel.client.view.ui;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

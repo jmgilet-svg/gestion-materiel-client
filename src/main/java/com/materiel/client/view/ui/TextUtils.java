@@ -1,4 +1,4 @@
-package com.materiel.client.view.util;
+package com.materiel.client.view.ui;
 
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;

@@ -2,7 +2,7 @@ package com.materiel.client.view.devis;
 
 import com.materiel.client.model.Devis;
 import com.materiel.client.service.ServiceFactory;
-import com.materiel.client.util.ColorUtils;
+import com.materiel.client.view.ui.ColorUtils;
 import com.materiel.client.service.DevisService;
 
 import javax.swing.*;
