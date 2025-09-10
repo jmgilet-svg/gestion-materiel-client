@@ -3,7 +3,9 @@ package com.materiel.client.view.planning;
 import com.materiel.client.model.Intervention;
 import com.materiel.client.service.InterventionService;
 import com.materiel.client.service.ServiceFactory;
+import com.materiel.client.view.planning.layout.LaneLayout;
 import com.materiel.client.view.planning.layout.TimeScaleModel;
+import com.materiel.client.view.planning.UIConstants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,6 +27,7 @@ public class PlanningBoard extends JPanel {
     private Rectangle selectionRect;
     private TimeScaleModel scale;
     private final List<Map.Entry<Intervention, Rectangle>> tileRects = new ArrayList<>();
+    private final List<Integer> rowLaneCounts = new ArrayList<>();
 
     public PlanningBoard() {
         setBackground(Color.WHITE);
@@ -77,6 +80,8 @@ public class PlanningBoard extends JPanel {
         copy.setRessources(src.getRessources());
         InterventionService svc = ServiceFactory.getInterventionService();
         svc.saveIntervention(copy);
+        revalidate();
+        repaint();
     }
 
     /**
@@ -104,6 +109,8 @@ public class PlanningBoard extends JPanel {
     /** Set shared time scale model. */
     public void setTimeScaleModel(TimeScaleModel model) {
         this.scale = model;
+        revalidate();
+        repaint();
     }
 
     /** Delegated column boundaries from model. */
@@ -115,6 +122,54 @@ public class PlanningBoard extends JPanel {
     public void setTileBounds(Map<Intervention, Rectangle> bounds) {
         tileRects.clear();
         tileRects.addAll(bounds.entrySet());
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * Compute rectangles from lane metadata and update internal cache.
+     */
+    public void layoutTiles(Map<Intervention, LaneLayout.Lane> lanes, TimeScaleModel scale) {
+        this.scale = scale;
+        tileRects.clear();
+        for (Map.Entry<Intervention, LaneLayout.Lane> e : lanes.entrySet()) {
+            Rectangle r = LaneLayout.computeTileBounds(e.getKey(), e.getValue(), scale);
+            int trackOffset = e.getValue().track * (UIConstants.ROW_BASE_HEIGHT + UIConstants.TRACK_V_GUTTER);
+            r.y += trackOffset;
+            tileRects.add(new AbstractMap.SimpleEntry<>(e.getKey(), r));
+        }
+        // keep height in sync with current tiles without requiring an external call
+        rowLaneCounts.clear();
+        rowLaneCounts.add(lanes.size());
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * Update lane counts for each resource to compute preferred height.
+     */
+    public void setLaneCounts(List<Integer> counts) {
+        rowLaneCounts.clear();
+        if (counts != null) {
+            rowLaneCounts.addAll(counts);
+        }
+        revalidate();
+        repaint();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        if (scale == null) {
+            return super.getPreferredSize();
+        }
+        int[] xs = scale.getColumnXs(LocalDate.now());
+        int width = xs.length > 0 ? xs[xs.length - 1] : 0;
+        int rowUsableWidth = width - scale.getLeftGutterWidth();
+        int height = 0;
+        for (int laneCount : rowLaneCounts) {
+            height += LaneLayout.computeRowHeight(laneCount, rowUsableWidth);
+        }
+        return new Dimension(width, height);
     }
 
     /** Hit test tiles from top-most to bottom. */
@@ -144,6 +199,7 @@ public class PlanningBoard extends JPanel {
     /** Clear current selection. */
     public void clearSelection() {
         selectedIds.clear();
+        revalidate();
         repaint();
     }
 
