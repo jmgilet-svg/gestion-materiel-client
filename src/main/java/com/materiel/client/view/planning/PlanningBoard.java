@@ -111,19 +111,22 @@ public class PlanningBoard extends JPanel {
         return gridModel;
     }
 
-    /** Update cached tile bounds in drawing order. */
+    /** Update cached tile bounds and z-order. */
     public void setTileBounds(Map<Intervention, Rectangle> bounds) {
-        tileRects.clear();
-        tileRects.addAll(bounds.entrySet());
+        tileBounds.clear();
+        tileBounds.putAll(bounds);
+        zOrder.clear();
+        zOrder.addAll(bounds.keySet());
     }
 
-    /** Hit test tiles from top-most to bottom. */
+    /** Hit test tiles from top-most to bottom using z-order. */
     public Optional<Intervention> pickTileAt(Point p) {
-        ListIterator<Map.Entry<Intervention, Rectangle>> it = tileRects.listIterator(tileRects.size());
+        ListIterator<Intervention> it = zOrder.listIterator(zOrder.size());
         while (it.hasPrevious()) {
-            Map.Entry<Intervention, Rectangle> e = it.previous();
-            if (e.getValue().contains(p)) {
-                return Optional.of(e.getKey());
+            Intervention i = it.previous();
+            Rectangle r = tileBounds.get(i);
+            if (r != null && r.contains(p)) {
+                return Optional.of(i);
             }
         }
         return Optional.empty();
@@ -157,6 +160,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mousePressed(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (multiSelectionEnabled && SwingUtilities.isLeftMouseButton(e)) {
                 anchor = e.getPoint();
                 selectionRect = new Rectangle(anchor);
@@ -165,6 +169,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseDragged(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (anchor != null) {
                 selectionRect.setBounds(Math.min(anchor.x, e.getX()), Math.min(anchor.y, e.getY()),
                         Math.abs(anchor.x - e.getX()), Math.abs(anchor.y - e.getY()));
@@ -174,6 +179,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseReleased(MouseEvent e) {
+            pickTileAt(e.getPoint());
             anchor = null;
             selectionRect = null;
             repaint();
