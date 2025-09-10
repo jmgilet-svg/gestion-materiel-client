@@ -16,7 +16,7 @@ import java.awt.*;
 public class GestionMaterielApp {
     
     public static void main(String[] args) {
-        System.out.println("FIX_WRAP_AND_ALIGN_APPLIED");
+        System.out.println("PATCH_DOC_FLOW_APPLIED");
         // Configuration du Look & Feel FlatLaf
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
