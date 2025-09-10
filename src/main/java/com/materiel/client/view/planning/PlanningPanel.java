@@ -12,7 +12,8 @@ import com.materiel.client.view.components.InterventionCard;
 import com.materiel.client.view.planning.InterventionCreateDialog;
 import com.materiel.client.view.planning.PlanningBoard;
 import com.materiel.client.view.resources.ResourceEditDialog;
-import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.planning.layout.LaneLayout;
+import com.materiel.client.view.ui.UIConstants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -610,22 +611,18 @@ public class PlanningPanel extends JPanel {
             List<Intervention> ints = interventionCards.stream()
                     .map(InterventionCard::getIntervention)
                     .collect(Collectors.toList());
-            List<OverlapLayout.Lane> lanes = OverlapLayout.layoutLanes(ints);
-            Map<Intervention, OverlapLayout.Lane> map = new HashMap<>();
-            for (OverlapLayout.Lane l : lanes) {
-                map.put(l.getIntervention(), l);
-            }
             final int gutter = 2;
             final int available = DAY_COLUMN_WIDTH - 10;
+            Map<Intervention, LaneLayout.Lane> map = LaneLayout.computeLanes(ints, available);
             int y = 0;
             for (InterventionCard c : interventionCards) {
-                OverlapLayout.Lane lane = map.get(c.getIntervention());
+                LaneLayout.Lane lane = map.get(c.getIntervention());
                 int width = available;
                 int xOffset = 0;
                 if (lane != null) {
                     width = Math.max(UIConstants.MIN_TILE_WIDTH,
-                            (available - (lane.getColCount() - 1) * gutter) / lane.getColCount());
-                    xOffset = lane.getCol() * (width + gutter);
+                            (available - (lane.count - 1) * gutter) / lane.count);
+                    xOffset = lane.index * (width + gutter);
                 }
                 int height = Math.max(UIConstants.MIN_TILE_HEIGHT, TILE_HEIGHT);
                 c.setBounds(xOffset, y, width, height);

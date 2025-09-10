@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.ui.UIConstants;
 
 /** Shared model to translate between time and pixel positions for the planning grid. */
 public class TimeGridModel {

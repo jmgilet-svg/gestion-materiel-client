@@ -1,6 +1,7 @@
 package com.materiel.client.view.planning;
 
 import com.materiel.client.view.planning.layout.TimeGridModel;
+import com.materiel.client.view.ui.UIConstants;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.materiel.client.model.Intervention;
-import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.ui.UIConstants;
 
 /**
  * Layout helper computing lanes and tracks with wrapping when space is limited.
@@ -59,7 +59,7 @@ public final class LaneLayout {
      * Compute pixel bounds of a tile inside its track. The returned rectangle is
      * relative to the first track; callers must apply the track vertical offset.
      */
-    public static Rectangle computeTileBounds(Intervention i, Lane lane, TimeScaleModel scale) {
+    public static Rectangle computeTileBounds(Intervention i, Lane lane, TimeGridModel scale) {
         int y1 = scale.timeToY(i.getDateDebut());
         int y2 = scale.timeToY(i.getDateFin());
         int height = Math.max(UIConstants.ROW_BASE_HEIGHT, y2 - y1);

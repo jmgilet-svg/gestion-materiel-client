@@ -2,7 +2,7 @@ package com.materiel.client.view.components;
 
 import com.materiel.client.model.Client;
 import com.materiel.client.model.Intervention;
-import com.materiel.client.view.util.TextUtils;
+import com.materiel.client.view.ui.TextUtils;
 
 import javax.swing.*;
 import java.awt.*;

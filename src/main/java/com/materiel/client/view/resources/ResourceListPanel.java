@@ -2,7 +2,7 @@ package com.materiel.client.view.resources;
 
 import com.materiel.client.model.Resource;
 import com.materiel.client.service.ServiceFactory;
-import com.materiel.client.util.ColorUtils;
+import com.materiel.client.view.ui.ColorUtils;
 import com.materiel.client.service.ResourceService;
 
 import javax.swing.*;

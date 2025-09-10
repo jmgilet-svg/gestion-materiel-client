@@ -1,7 +1,7 @@
 package com.materiel.client.view.planning.layout;
 
 import com.materiel.client.model.Intervention;
-import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.ui.UIConstants;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

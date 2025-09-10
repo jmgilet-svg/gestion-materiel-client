@@ -3,7 +3,7 @@ package com.materiel.client.view.livraisons;
 import com.materiel.client.model.BonLivraison;
 import com.materiel.client.service.ServiceFactory;
 import com.materiel.client.service.BonLivraisonService;
-import com.materiel.client.util.ColorUtils;
+import com.materiel.client.view.ui.ColorUtils;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
