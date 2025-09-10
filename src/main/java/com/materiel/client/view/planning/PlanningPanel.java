@@ -36,8 +36,10 @@ import org.slf4j.LoggerFactory;
 public class PlanningPanel extends JPanel {
     
     private static final int RESOURCE_PANEL_WIDTH = 200;
-    private static final int DAY_COLUMN_WIDTH = 180;
-    private static final int HOUR_ROW_HEIGHT = 80;
+    private static final int RESOURCE_COL_WIDTH = 140;
+    private static final int DAY_COLUMN_WIDTH = 220;
+    private static final int HOUR_ROW_HEIGHT = 100;
+    private static final int TILE_HEIGHT = 80;
 
     private static final Logger log = LoggerFactory.getLogger(PlanningPanel.class);
 
@@ -210,73 +212,91 @@ public class PlanningPanel extends JPanel {
         PlanningBoard panel = new PlanningBoard();
         panel.setLayout(new BorderLayout());
         panel.setBackground(Color.WHITE);
-        
         // Header avec les jours de la semaine
         JPanel headerPanel = createWeekHeaderPanel();
         panel.add(headerPanel, BorderLayout.NORTH);
-        
+
         // Grid des interventions
         JPanel gridPanel = createInterventionGridPanel();
         panel.add(gridPanel, BorderLayout.CENTER);
-        
+
         return panel;
     }
-    
+
     private JPanel createWeekHeaderPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 7));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setPreferredSize(new Dimension(0, 40));
         panel.setBackground(Color.decode("#F1F5F9"));
         panel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
-        
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridy = 0;
+
+        JLabel blank = new JLabel();
+        blank.setPreferredSize(new Dimension(RESOURCE_COL_WIDTH, 40));
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        panel.add(blank, gbc);
+
         String[] days = {"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
         DateTimeFormatter dayFormat = DateTimeFormatter.ofPattern("dd/MM");
-        
+
         for (int i = 0; i < 7; i++) {
             LocalDate dayDate = currentWeekStart.plusDays(i);
             String dayText = days[i] + " " + dayDate.format(dayFormat);
-            
+
             JLabel dayLabel = new JLabel(dayText, SwingConstants.CENTER);
             dayLabel.setFont(dayLabel.getFont().deriveFont(Font.BOLD, 12f));
             dayLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-            
-            // Mettre en évidence aujourd'hui
+
+
             if (dayDate.equals(LocalDate.now())) {
                 dayLabel.setOpaque(true);
                 dayLabel.setBackground(Color.decode("#EBF4FF"));
                 dayLabel.setForeground(Color.decode("#3B82F6"));
             }
-            
-            panel.add(dayLabel);
+
+            gbc.gridx = i + 1;
+            gbc.weightx = 1.0;
+            panel.add(dayLabel, gbc);
         }
-        
+
         return panel;
     }
-    
+
     private JPanel createInterventionGridPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
-        
-        // Créer une grille pour chaque ressource × jour
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        
+
         dayCells.clear();
-        
+
         for (int resourceIndex = 0; resourceIndex < resources.size(); resourceIndex++) {
+            GridBagConstraints labelGbc = new GridBagConstraints();
+            labelGbc.fill = GridBagConstraints.BOTH;
+            labelGbc.gridx = 0;
+            labelGbc.gridy = resourceIndex;
+            labelGbc.weightx = 0;
+            labelGbc.weighty = 1.0;
+            JLabel resLabel = new JLabel(resources.get(resourceIndex).getNom());
+            resLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
+            resLabel.setPreferredSize(new Dimension(RESOURCE_COL_WIDTH, HOUR_ROW_HEIGHT));
+            panel.add(resLabel, labelGbc);
+
             for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
                 DayCell dayCell = createDayCell(resourceIndex, dayIndex);
                 String key = resourceIndex + "-" + dayIndex;
                 dayCells.put(key, dayCell);
-                
-                gbc.gridx = dayIndex;
-                gbc.gridy = resourceIndex;
-                panel.add(dayCell, gbc);
+                GridBagConstraints cellGbc = new GridBagConstraints();
+                cellGbc.fill = GridBagConstraints.BOTH;
+                cellGbc.gridx = dayIndex + 1;
+                cellGbc.gridy = resourceIndex;
+                cellGbc.weightx = 1.0;
+                cellGbc.weighty = 1.0;
+                panel.add(dayCell, cellGbc);
             }
         }
-        
+
         return panel;
     }
     
@@ -571,7 +591,9 @@ public class PlanningPanel extends JPanel {
         public void addIntervention(Intervention intervention) {
             InterventionCard card = new InterventionCard(intervention);
             card.setAlignmentX(Component.LEFT_ALIGNMENT);
-            card.setMaximumSize(new Dimension(DAY_COLUMN_WIDTH - 10, 60));
+            Dimension size = new Dimension(DAY_COLUMN_WIDTH - 10, TILE_HEIGHT);
+            card.setPreferredSize(size);
+            card.setMaximumSize(size);
 
             interventionCards.add(card);
             interventionCards.sort((a, b) -> {
@@ -605,7 +627,9 @@ public class PlanningPanel extends JPanel {
                     xOffset = lane.getCol() * (width + gutter);
                 }
                 c.setBorder(BorderFactory.createEmptyBorder(0, xOffset, 0, 0));
-                c.setMaximumSize(new Dimension(width, 60));
+                Dimension size = new Dimension(width, TILE_HEIGHT);
+                c.setPreferredSize(size);
+                c.setMaximumSize(size);
                 add(c);
                 add(Box.createVerticalStrut(2));
             }
@@ -919,5 +943,4 @@ public class PlanningPanel extends JPanel {
     public LocalDateTime applySnap(LocalDateTime time) {
         return planningGridPanel != null ? planningGridPanel.applySnap(time) : time;
     }
-
 }
