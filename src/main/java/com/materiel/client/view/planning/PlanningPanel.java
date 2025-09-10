@@ -213,7 +213,6 @@ public class PlanningPanel extends JPanel {
         PlanningBoard panel = new PlanningBoard();
         panel.setLayout(new BorderLayout());
         panel.setBackground(Color.WHITE);
-
         // Header avec les jours de la semaine
         JPanel headerPanel = createWeekHeaderPanel();
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -288,7 +287,6 @@ public class PlanningPanel extends JPanel {
                 DayCell dayCell = createDayCell(resourceIndex, dayIndex);
                 String key = resourceIndex + "-" + dayIndex;
                 dayCells.put(key, dayCell);
-
                 GridBagConstraints cellGbc = new GridBagConstraints();
                 cellGbc.fill = GridBagConstraints.BOTH;
                 cellGbc.gridx = dayIndex + 1;
@@ -584,7 +582,6 @@ public class PlanningPanel extends JPanel {
             this.resourceIndex = resourceIndex;
             this.dayIndex = dayIndex;
             this.interventionCards = new ArrayList<>();
-
             setLayout(null);
             setBackground(Color.WHITE);
             updateAppearance();
