@@ -24,7 +24,10 @@ public class PlanningBoard extends JPanel {
     private final Set<Long> selectedIds = new HashSet<>();
     private Rectangle selectionRect;
     private TimeScaleModel scale;
-    private final List<Map.Entry<Intervention, Rectangle>> tileRects = new ArrayList<>();
+    // bounding boxes of tiles recomputed on each layout/paint
+    private final Map<Intervention, Rectangle> tileBounds = new HashMap<>();
+    // painting order of tiles (last is on top)
+    private final List<Intervention> zOrder = new ArrayList<>();
 
     public PlanningBoard() {
         setBackground(Color.WHITE);
@@ -111,19 +114,22 @@ public class PlanningBoard extends JPanel {
         return scale != null ? scale.getColumnXs(day) : new int[0];
     }
 
-    /** Update cached tile bounds in drawing order. */
+    /** Update cached tile bounds and z-order. */
     public void setTileBounds(Map<Intervention, Rectangle> bounds) {
-        tileRects.clear();
-        tileRects.addAll(bounds.entrySet());
+        tileBounds.clear();
+        tileBounds.putAll(bounds);
+        zOrder.clear();
+        zOrder.addAll(bounds.keySet());
     }
 
-    /** Hit test tiles from top-most to bottom. */
+    /** Hit test tiles from top-most to bottom using z-order. */
     public Optional<Intervention> pickTileAt(Point p) {
-        ListIterator<Map.Entry<Intervention, Rectangle>> it = tileRects.listIterator(tileRects.size());
+        ListIterator<Intervention> it = zOrder.listIterator(zOrder.size());
         while (it.hasPrevious()) {
-            Map.Entry<Intervention, Rectangle> e = it.previous();
-            if (e.getValue().contains(p)) {
-                return Optional.of(e.getKey());
+            Intervention i = it.previous();
+            Rectangle r = tileBounds.get(i);
+            if (r != null && r.contains(p)) {
+                return Optional.of(i);
             }
         }
         return Optional.empty();
@@ -157,6 +163,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mousePressed(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (multiSelectionEnabled && SwingUtilities.isLeftMouseButton(e)) {
                 anchor = e.getPoint();
                 selectionRect = new Rectangle(anchor);
@@ -165,6 +172,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseDragged(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (anchor != null) {
                 selectionRect.setBounds(Math.min(anchor.x, e.getX()), Math.min(anchor.y, e.getY()),
                         Math.abs(anchor.x - e.getX()), Math.abs(anchor.y - e.getY()));
@@ -174,6 +182,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseReleased(MouseEvent e) {
+            pickTileAt(e.getPoint());
             anchor = null;
             selectionRect = null;
             repaint();
