@@ -7,6 +7,7 @@ import com.materiel.client.service.SequenceService;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
+import java.math.BigDecimal;
 
 /**
  * Implémentation mock des factures.
@@ -20,6 +21,16 @@ public class InvoiceServiceMock implements InvoiceService {
         this.store = new JsonStore<>(dataDir.resolve("invoices.json"), Invoice[].class);
         this.sequenceService = sequenceService;
         this.cache = store.load();
+        if (this.cache.isEmpty()) {
+            Invoice sample = new Invoice();
+            sample.setCustomerId(UUID.randomUUID());
+            sample.setCustomerName("Client démo");
+            sample.setLines(List.of(
+                new DocumentLine(UUID.randomUUID(), "Prod1", new BigDecimal("1"), "u", new BigDecimal("100"), BigDecimal.ZERO, new BigDecimal("20")),
+                new DocumentLine(UUID.randomUUID(), "Prod2", new BigDecimal("1"), "u", new BigDecimal("50"), BigDecimal.ZERO, new BigDecimal("20"))
+            ));
+            create(sample);
+        }
     }
 
     @Override

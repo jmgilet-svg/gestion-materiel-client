@@ -3,11 +3,12 @@ package com.materiel.client.view.devis;
 
 import com.materiel.client.model.Devis;
 import com.materiel.client.model.Client;
+import com.materiel.client.view.doc.DocumentLineTable;
+import com.materiel.client.view.doc.DocumentTotalsPanel;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.math.BigDecimal;
 
 /**
  * Dialogue d'édition/création de devis
@@ -23,10 +24,9 @@ public class DevisEditDialog extends JDialog {
     private JSpinner dateCreationSpinner;
     private JSpinner dateValiditeSpinner;
     private JComboBox<Devis.StatutDevis> statutComboBox;
-    private JTextField montantHTField;
-    private JTextField montantTVAField;
-    private JTextField montantTTCField;
     private JSpinner versionSpinner;
+    private DocumentLineTable lineTable;
+    private DocumentTotalsPanel totalsPanel;
     
     public DevisEditDialog(Frame parent, Devis devis) {
         super(parent, devis == null ? "Nouveau Devis" : "Modifier Devis", true);
@@ -60,7 +60,20 @@ public class DevisEditDialog extends JDialog {
         // Formulaire principal
         JPanel formPanel = createFormPanel();
         panel.add(formPanel, BorderLayout.CENTER);
-        
+
+        // Tableau de lignes et totaux
+        JPanel linesPanel = new JPanel(new BorderLayout());
+        lineTable = new DocumentLineTable(devis.getLignes());
+        totalsPanel = new DocumentTotalsPanel();
+        totalsPanel.bind(devis.getLignes());
+        lineTable.getModel().addTableModelListener(e -> {
+            totalsPanel.bind(devis.getLignes());
+            devis.recalculerMontants();
+        });
+        linesPanel.add(lineTable, BorderLayout.CENTER);
+        linesPanel.add(totalsPanel, BorderLayout.SOUTH);
+        panel.add(linesPanel, BorderLayout.SOUTH);
+
         return panel;
     }
     
@@ -142,38 +155,6 @@ public class DevisEditDialog extends JDialog {
         panel.add(versionSpinner, gbc);
         row++;
         
-        // Séparateur
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        JSeparator separator = new JSeparator();
-        panel.add(separator, gbc);
-        gbc.gridwidth = 1;
-        row++;
-        
-        // Montants
-        gbc.gridx = 0; gbc.gridy = row; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
-        panel.add(new JLabel("Montant HT:"), gbc);
-        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
-        montantHTField = new JTextField(15);
-        montantHTField.setHorizontalAlignment(JTextField.RIGHT);
-        panel.add(montantHTField, gbc);
-        row++;
-        
-        gbc.gridx = 0; gbc.gridy = row; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
-        panel.add(new JLabel("Montant TVA:"), gbc);
-        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
-        montantTVAField = new JTextField(15);
-        montantTVAField.setHorizontalAlignment(JTextField.RIGHT);
-        panel.add(montantTVAField, gbc);
-        row++;
-        
-        gbc.gridx = 0; gbc.gridy = row; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
-        panel.add(new JLabel("Montant TTC:"), gbc);
-        gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.weightx = 1.0;
-        montantTTCField = new JTextField(15);
-        montantTTCField.setHorizontalAlignment(JTextField.RIGHT);
-        montantTTCField.setFont(montantTTCField.getFont().deriveFont(Font.BOLD));
-        panel.add(montantTTCField, gbc);
-        
         return panel;
     }
     
@@ -226,17 +207,7 @@ public class DevisEditDialog extends JDialog {
         statutComboBox.setSelectedItem(devis.getStatut());
         versionSpinner.setValue(devis.getVersion());
         
-        if (devis.getMontantHT() != null) {
-            montantHTField.setText(devis.getMontantHT().toString());
-        }
-        
-        if (devis.getMontantTVA() != null) {
-            montantTVAField.setText(devis.getMontantTVA().toString());
-        }
-        
-        if (devis.getMontantTTC() != null) {
-            montantTTCField.setText(devis.getMontantTTC().toString());
-        }
+        totalsPanel.bind(devis.getLignes());
     }
     
     private void saveAction(ActionEvent e) {
@@ -279,27 +250,13 @@ public class DevisEditDialog extends JDialog {
             devis.setStatut((Devis.StatutDevis) statutComboBox.getSelectedItem());
             devis.setVersion((Integer) versionSpinner.getValue());
             
-            // Montants
-            if (!montantHTField.getText().trim().isEmpty()) {
-                devis.setMontantHT(new BigDecimal(montantHTField.getText().trim()));
-            }
-            
-            if (!montantTVAField.getText().trim().isEmpty()) {
-                devis.setMontantTVA(new BigDecimal(montantTVAField.getText().trim()));
-            }
-            
-            if (!montantTTCField.getText().trim().isEmpty()) {
-                devis.setMontantTTC(new BigDecimal(montantTTCField.getText().trim()));
-            }
+            // Recalcul des montants à partir des lignes
+            devis.recalculerMontants();
             
             return true;
             
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Format de nombre invalide dans les montants.", 
-                                        "Erreur de validation", JOptionPane.ERROR_MESSAGE);
-            return false;
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Erreur lors de la sauvegarde: " + ex.getMessage(), 
+            JOptionPane.showMessageDialog(this, "Erreur lors de la sauvegarde: " + ex.getMessage(),
                                         "Erreur", JOptionPane.ERROR_MESSAGE);
             return false;
         }

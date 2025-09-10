@@ -50,6 +50,14 @@ public class ServiceMockTest {
         assertThat(order.getQuoteId()).isEqualTo(quote.getId());
         assertThat(order.getStatus()).isEqualTo(DocumentStatus.CONFIRMED);
         assertThat(order.getNumber()).isNotNull();
+        assertThat(order.getLines()).hasSize(2);
+        for (int i = 0; i < 2; i++) {
+            DocumentLine ql = quote.getLines().get(i);
+            DocumentLine ol = order.getLines().get(i);
+            assertThat(ol.getDesignation()).isEqualTo(ql.getDesignation());
+            assertThat(ol.getPrixUnitaireHT()).isEqualByComparingTo(ql.getPrixUnitaireHT());
+            assertThat(ol.getTvaPct()).isEqualByComparingTo(ql.getTvaPct());
+        }
         assertThat(order.getTotalHT()).isEqualByComparingTo(BigDecimal.valueOf(230));
         assertThat(order.getTotalTVA()).isEqualByComparingTo(BigDecimal.valueOf(46));
         assertThat(order.getTotalTTC()).isEqualByComparingTo(BigDecimal.valueOf(276));

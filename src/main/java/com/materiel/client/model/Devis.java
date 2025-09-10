@@ -2,6 +2,10 @@ package com.materiel.client.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import com.materiel.client.model.DocumentLine;
+import com.materiel.client.util.DocumentTotalsCalculator;
 
 /**
  * Modèle client pour les devis
@@ -34,6 +38,7 @@ public class Devis {
     private Client client;
     private StatutDevis statut;
     private Integer version;
+    private List<DocumentLine> lignes = new ArrayList<>();
     private BigDecimal montantHT;
     private BigDecimal montantTVA;
     private BigDecimal montantTTC;
@@ -78,6 +83,19 @@ public class Devis {
     
     public BigDecimal getMontantTTC() { return montantTTC; }
     public void setMontantTTC(BigDecimal montantTTC) { this.montantTTC = montantTTC; }
+
+    public List<DocumentLine> getLignes() { return lignes; }
+    public void setLignes(List<DocumentLine> lignes) { this.lignes = lignes; }
+
+    /**
+     * Recalcule les montants à partir des lignes.
+     */
+    public void recalculerMontants() {
+        DocumentTotalsCalculator.Totaux t = DocumentTotalsCalculator.compute(lignes);
+        this.montantHT = t.totalHT;
+        this.montantTVA = t.totalTVA;
+        this.montantTTC = t.totalTTC;
+    }
     
     @Override
     public String toString() {
