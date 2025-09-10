@@ -3,15 +3,16 @@ package com.materiel.client.view.planning;
 import com.materiel.client.model.Intervention;
 import com.materiel.client.service.InterventionService;
 import com.materiel.client.service.ServiceFactory;
+import com.materiel.client.view.planning.layout.TimeScaleModel;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Interactive planning board handling zoom, selection and duplication logic.
@@ -22,6 +23,8 @@ public class PlanningBoard extends JPanel {
     private boolean multiSelectionEnabled = false;
     private final Set<Long> selectedIds = new HashSet<>();
     private Rectangle selectionRect;
+    private TimeScaleModel scale;
+    private final List<Map.Entry<Intervention, Rectangle>> tileRects = new ArrayList<>();
 
     public PlanningBoard() {
         setBackground(Color.WHITE);
@@ -96,6 +99,46 @@ public class PlanningBoard extends JPanel {
      */
     public ZoomModel getZoomModel() {
         return zoom;
+    }
+
+    /** Set shared time scale model. */
+    public void setTimeScaleModel(TimeScaleModel model) {
+        this.scale = model;
+    }
+
+    /** Delegated column boundaries from model. */
+    public int[] getColumnXs(LocalDate day) {
+        return scale != null ? scale.getColumnXs(day) : new int[0];
+    }
+
+    /** Update cached tile bounds in drawing order. */
+    public void setTileBounds(Map<Intervention, Rectangle> bounds) {
+        tileRects.clear();
+        tileRects.addAll(bounds.entrySet());
+    }
+
+    /** Hit test tiles from top-most to bottom. */
+    public Optional<Intervention> pickTileAt(Point p) {
+        ListIterator<Map.Entry<Intervention, Rectangle>> it = tileRects.listIterator(tileRects.size());
+        while (it.hasPrevious()) {
+            Map.Entry<Intervention, Rectangle> e = it.previous();
+            if (e.getValue().contains(p)) {
+                return Optional.of(e.getKey());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Test if point is on top resize handle. */
+    public boolean hitHandleTop(Rectangle r, Point p) {
+        Rectangle top = new Rectangle(r.x, r.y, r.width, 8);
+        return top.contains(p);
+    }
+
+    /** Test if point is on bottom resize handle. */
+    public boolean hitHandleBottom(Rectangle r, Point p) {
+        Rectangle bottom = new Rectangle(r.x, r.y + r.height - 8, r.width, 8);
+        return bottom.contains(p);
     }
 
     /** Clear current selection. */
