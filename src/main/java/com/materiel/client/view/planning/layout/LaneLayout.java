@@ -79,8 +79,6 @@ public final class LaneLayout {
             int count = Math.min(colsPerTrack, laneCount - track * colsPerTrack);
             result.put(e.getKey(), new Lane(index, count, track, tracks));
         }
-        return result;
-    }
 
     /**
      * Compute pixel bounds of a tile using the provided grid model and lane info.
