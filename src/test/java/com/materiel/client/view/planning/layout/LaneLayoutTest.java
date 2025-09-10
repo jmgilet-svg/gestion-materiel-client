@@ -4,6 +4,7 @@ import com.materiel.client.model.Intervention;
 import com.materiel.client.view.ui.UIConstants;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +16,21 @@ public class LaneLayoutTest {
     @Test
     void wrapOccursWhenWidthTooSmall() {
         List<Intervention> interventions = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < 5; i++) {
-            interventions.add(new Intervention());
+            Intervention in = new Intervention();
+            in.setDateDebut(now);
+            in.setDateFin(now.plusHours(1));
+            interventions.add(in);
         }
         int rowUsableWidth = UIConstants.MIN_TILE_WIDTH * 2; // force wrap
-        Map<Intervention, LaneLayout.Lane> lanes = LaneLayout.computeLanes(interventions, rowUsableWidth);
+        Map<Intervention, LaneLayout.Lane> lanes = LaneLayout.computeLanes(
+                interventions,
+                new LaneLayout.StartEnd<Intervention>() {
+                    @Override public LocalDateTime start(Intervention t) { return t.getDateDebut(); }
+                    @Override public LocalDateTime end(Intervention t) { return t.getDateFin(); }
+                },
+                rowUsableWidth);
         LaneLayout.Lane lane = lanes.values().iterator().next();
         assertTrue(lane.tracks > 1, "should wrap to multiple tracks");
     }

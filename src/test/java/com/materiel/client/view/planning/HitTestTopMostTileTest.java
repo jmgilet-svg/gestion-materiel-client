@@ -1,6 +1,7 @@
 package com.materiel.client.view.planning;
 
 import com.materiel.client.model.Intervention;
+import com.materiel.client.view.planning.layout.DefaultTimeGridModel;
 import com.materiel.client.view.planning.layout.TimeGridModel;
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +10,7 @@ import java.awt.Rectangle;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,7 +19,7 @@ public class HitTestTopMostTileTest {
     @Test
     void pickReturnsTopMostTile() {
         PlanningBoard board = new PlanningBoard();
-        board.setTimeGridModel(new TimeGridModel(100));
+        board.setTimeGridModel(new DefaultTimeGridModel(LocalDate.now(), 100));
         Intervention bottom = new Intervention();
         bottom.setId(1L);
         Intervention top = new Intervention();

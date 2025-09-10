@@ -12,7 +12,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -135,11 +134,12 @@ public class PlanningBoard extends JPanel {
         tileBounds.clear();
         zOrder.clear();
         for (Map.Entry<Intervention, LaneLayout.Lane> e : lanes.entrySet()) {
-            Rectangle r = LaneLayout.computeTileBounds(e.getKey(), e.getValue(), scale);
-            int trackOffset = e.getValue().track * (UIConstants.ROW_BASE_HEIGHT + UIConstants.TRACK_V_GUTTER);
-            r.y += trackOffset;
-            tileBounds.put(e.getKey(), r);
-            zOrder.add(e.getKey());
+            Intervention in = e.getKey();
+            LaneLayout.Lane lane = e.getValue();
+            Rectangle r = LaneLayout.computeTileBounds(
+                    in.getDateDebut(), in.getDateFin(), lane, scale, 0);
+            tileBounds.put(in, r);
+            zOrder.add(in);
         }
         rowLaneCounts.clear();
         rowLaneCounts.add(lanes.size());
@@ -164,9 +164,8 @@ public class PlanningBoard extends JPanel {
         if (scale == null) {
             return super.getPreferredSize();
         }
-        int[] xs = scale.getDayColumnXs(LocalDate.now());
-        int width = xs.length > 0 ? xs[xs.length - 1] : 0;
-        int rowUsableWidth = width - scale.getLeftGutterWidth();
+        int width = scale.getLeftGutterWidth() + scale.getContentWidth();
+        int rowUsableWidth = scale.getContentWidth();
         int height = 0;
         for (int laneCount : rowLaneCounts) {
             height += LaneLayout.computeRowHeight(laneCount, rowUsableWidth);
