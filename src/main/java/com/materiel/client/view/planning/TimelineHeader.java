@@ -48,14 +48,15 @@ public class TimelineHeader extends JComponent implements ChangeListener {
         Graphics2D g2 = (Graphics2D) g.create();
 
         int h = getHeight();
+        int gutter = model.getLeftGutterWidth();
         // Empty header cell over the resource column
         g2.setColor(getBackground());
-        g2.fillRect(0, 0, UIConstants.LEFT_GUTTER_WIDTH, h);
+        g2.fillRect(0, 0, gutter, h);
         g2.setColor(Color.GRAY);
-        g2.drawRect(0, 0, UIConstants.LEFT_GUTTER_WIDTH, h - 1);
+        g2.drawRect(0, 0, gutter, h - 1);
 
-        int[] xs = model.getDayColumnXs(LocalDate.now());
-        LocalDate d = LocalDate.now();
+        int[] xs = model.getDayColumnXs(null);
+        LocalDate d = model.xToTime(gutter).toLocalDate();
         FontMetrics fm = g2.getFontMetrics();
         for (int i = 0; i < xs.length; i++) {
             int x = xs[i];
