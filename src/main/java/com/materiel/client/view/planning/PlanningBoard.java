@@ -135,11 +135,15 @@ public class PlanningBoard extends JPanel {
         tileBounds.clear();
         zOrder.clear();
         for (Map.Entry<Intervention, LaneLayout.Lane> e : lanes.entrySet()) {
-            Rectangle r = LaneLayout.computeTileBounds(e.getKey(), e.getValue(), scale);
-            int trackOffset = e.getValue().track * (UIConstants.ROW_BASE_HEIGHT + UIConstants.TRACK_V_GUTTER);
-            r.y += trackOffset;
-            tileBounds.put(e.getKey(), r);
-            zOrder.add(e.getKey());
+            Intervention in = e.getKey();
+            LaneLayout.Lane lane = e.getValue();
+            int x = scale.timeToX(in.getDateDebut());
+            int w = scale.timeToX(in.getDateFin()) - x;
+            int y = lane.track * (UIConstants.ROW_BASE_HEIGHT + UIConstants.TRACK_V_GUTTER);
+            int h = Math.max(UIConstants.MIN_TILE_HEIGHT, UIConstants.ROW_BASE_HEIGHT - 1);
+            Rectangle r = new Rectangle(x, y, w, h);
+            tileBounds.put(in, r);
+            zOrder.add(in);
         }
         rowLaneCounts.clear();
         rowLaneCounts.add(lanes.size());
