@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LaneLayoutTest {
     @Test
@@ -21,5 +22,13 @@ public class LaneLayoutTest {
         Map<Intervention, LaneLayout.Lane> lanes = LaneLayout.computeLanes(interventions, rowUsableWidth);
         LaneLayout.Lane lane = lanes.values().iterator().next();
         assertTrue(lane.tracks > 1, "should wrap to multiple tracks");
+    }
+
+    @Test
+    void rowHeightGrowsWithTracks() {
+        int laneCount = 5;
+        int rowUsableWidth = UIConstants.MIN_TILE_WIDTH * 2; // forces 3 tracks
+        int expected = UIConstants.ROW_BASE_HEIGHT * 3 + UIConstants.TRACK_V_GUTTER * 2;
+        assertEquals(expected, LaneLayout.computeRowHeight(laneCount, rowUsableWidth));
     }
 }
