@@ -29,10 +29,11 @@ import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 
 import com.materiel.client.model.Intervention;
-import com.materiel.client.view.planning.layout.DefaultTimeGridModel;
-import com.materiel.client.view.planning.layout.LaneLayout;
-import com.materiel.client.view.planning.layout.TimeGridModel;
-import com.materiel.client.view.ui.UIConstants;
+import com.materiel.client.util.UIConstants;
+
+import com.materiel.client.view.planning.DefaultTimeGridModel;
+import com.materiel.client.view.planning.LaneLayout;
+import com.materiel.client.view.planning.TimeGridModel;
 
 /**
  * Interactive planning board handling zoom, selection and duplication logic.
@@ -81,6 +82,7 @@ public final class PlanningBoard extends JComponent implements Scrollable {
         setFont(new Font("Inter", Font.PLAIN, 12));
         this.currentWeek = weekStart.with(DayOfWeek.MONDAY);
         this.gridModel = new DefaultTimeGridModel(currentWeek, 48);
+        System.out.println("PLANNING_WRAP_ENABLED");
 
         // hit test simple pour sélection
         MouseAdapter ma = new MouseAdapter() {
@@ -129,49 +131,30 @@ public final class PlanningBoard extends JComponent implements Scrollable {
             out.height = UIConstants.ROW_BASE_HEIGHT;
             return out;
         }
-        // 1) Colonnes par sweep-line
-        Map<Intervention,Integer> colIndex = new LinkedHashMap<>();
+
+        // copie triée pour un z-order stable
         List<Intervention> sorted = new ArrayList<>(items);
         sorted.sort(Comparator.comparing(Intervention::getDateDebut));
-        List<Intervention> open = new ArrayList<>();
-        int maxCols = 0;
+
+        Map<Intervention, LaneLayout.Lane> lanes = LaneLayout.computeLanes(
+                sorted, Intervention::getDateDebut, Intervention::getDateFin, rowUsableWidth);
+
+        int laneCount = lanes.values().stream().mapToInt(l -> l.index + 1).max().orElse(1);
+        out.height = LaneLayout.computeRowHeight(laneCount, rowUsableWidth);
+
         for (Intervention it : sorted) {
-            open.removeIf(o -> !o.getDateFin().isAfter(it.getDateDebut()));
-            boolean[] used = new boolean[open.size()+1];
-            for (Intervention o : open) used[colIndex.get(o)] = true;
-            int idx=0; while (idx < used.length && used[idx]) idx++;
-            colIndex.put(it, idx);
-            open.add(it);
-            maxCols = Math.max(maxCols, idx+1);
-        }
+            LaneLayout.Lane lane = lanes.get(it);
 
-        // 2) Nombre de tracks (wrap). Variante "lisibilité d'abord" = 1 overlap -> 2 tracks, etc.
-        //    Si tu veux baser sur MIN_TILE_WIDTH, remets la formule de LaneLayout.computeRowHeight.
-        int tracks = Math.max(1, maxCols);
-        int colsPerTrack = (int)Math.ceil(maxCols * 1.0 / tracks);
-        out.height = UIConstants.ROW_BASE_HEIGHT * tracks + UIConstants.TRACK_V_GUTTER * (tracks - 1);
-
-        // 3) Bounds
-        for (Intervention it : sorted) {
-            int k = colIndex.get(it);
-            int track = k % tracks;
-            int indexWithinTrack = k / tracks;
-
-            // largeur de colonne dans ce track
-            int totalGutter = (colsPerTrack - 1) * 2;
+            int totalGutter = (lane.count - 1) * 2;
             int tileAreaW = Math.max(1, rowUsableWidth - totalGutter);
-            int colW = Math.max(UIConstants.MIN_TILE_WIDTH, tileAreaW / colsPerTrack);
-            int colX = UIConstants.LEFT_GUTTER_WIDTH + indexWithinTrack * (colW + 2);
+            int colW = Math.max(UIConstants.MIN_TILE_WIDTH, tileAreaW / lane.count);
+            int colX = UIConstants.LEFT_GUTTER_WIDTH + lane.index * (colW + 2);
 
-            // rectangle par défaut (temps → X)
-            Rectangle r = LaneLayout.computeTileBounds(it.getDateDebut(), it.getDateFin(),
-                    new LaneLayout.Lane(indexWithinTrack, colsPerTrack, track, tracks),
-                    gridModel, rowY);
+            Rectangle r = LaneLayout.computeTileBounds(it.getDateDebut(), it.getDateFin(), lane, gridModel, rowY);
 
-            // clamp dans la colonne pour éviter les recouvrements visuels
             int x = Math.max(colX, Math.min(r.x, colX + colW - 1));
             int w = Math.min(r.width, colW - (x - colX));
-            Rectangle rr = new Rectangle(x, r.y, Math.max(1,w), r.height);
+            Rectangle rr = new Rectangle(x, r.y, Math.max(1, w), r.height);
 
             out.bounds.put(it, rr);
             out.z.add(it);
