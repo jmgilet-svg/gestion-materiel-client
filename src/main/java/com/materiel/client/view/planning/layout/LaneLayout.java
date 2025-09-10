@@ -1,5 +1,8 @@
 package com.materiel.client.view.planning.layout;
 
+import com.materiel.client.model.Intervention;
+import com.materiel.client.view.ui.UIConstants;
+
 import java.awt.Rectangle;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -89,3 +92,4 @@ public final class LaneLayout {
         return new Rectangle(x, y, w, h);
     }
 }
+
