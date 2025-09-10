@@ -16,6 +16,7 @@ Application desktop moderne en Java Swing pour la gestion de matériel et réser
 - **Server-Sent Events** pour les notifications temps réel
 - **Cartes interventions** enrichies avec statuts colorés
 - **Filtrage des ressources par type** et ajustement visuel des horaires
+- **Colonne fixe des ressources** et tuiles compactées sans chevauchement
 
 
 ## 🛠️ Technologies
@@ -78,6 +79,10 @@ mvn clean package jpackage:jpackage
 **Menu Latéral :**
 - 📅 **Planning** - Vue hebdomadaire des interventions
 - 📋 **Devis** - Gestion des devis clients
+
+### Affichage tuiles & colonne ressource
+
+Le planning affiche une colonne de gauche figée indiquant le nom de chaque ressource. Les tuiles d'intervention sont automatiquement compactées en colonnes pour éviter tout recouvrement visuel.
 - 📦 **Commandes** - Suivi des bons de commande
 - 🚚 **Bons de livraison** - Gestion des livraisons
 - 🧾 **Factures** - Facturation clients

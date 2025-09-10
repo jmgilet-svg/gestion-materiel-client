@@ -12,6 +12,7 @@ import com.materiel.client.view.components.InterventionCard;
 import com.materiel.client.view.planning.InterventionCreateDialog;
 import com.materiel.client.view.planning.PlanningBoard;
 import com.materiel.client.view.resources.ResourceEditDialog;
+import com.materiel.client.view.planning.UIConstants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -249,7 +250,6 @@ public class PlanningPanel extends JPanel {
             JLabel dayLabel = new JLabel(dayText, SwingConstants.CENTER);
             dayLabel.setFont(dayLabel.getFont().deriveFont(Font.BOLD, 12f));
             dayLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
 
             if (dayDate.equals(LocalDate.now())) {
                 dayLabel.setOpaque(true);
@@ -582,8 +582,7 @@ public class PlanningPanel extends JPanel {
             this.resourceIndex = resourceIndex;
             this.dayIndex = dayIndex;
             this.interventionCards = new ArrayList<>();
-
-            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            setLayout(null);
             setBackground(Color.WHITE);
             updateAppearance();
         }
@@ -618,20 +617,20 @@ public class PlanningPanel extends JPanel {
             }
             final int gutter = 2;
             final int available = DAY_COLUMN_WIDTH - 10;
+            int y = 0;
             for (InterventionCard c : interventionCards) {
                 OverlapLayout.Lane lane = map.get(c.getIntervention());
                 int width = available;
                 int xOffset = 0;
                 if (lane != null) {
-                    width = (available - (lane.getColCount() - 1) * gutter) / lane.getColCount();
+                    width = Math.max(UIConstants.MIN_TILE_WIDTH,
+                            (available - (lane.getColCount() - 1) * gutter) / lane.getColCount());
                     xOffset = lane.getCol() * (width + gutter);
                 }
-                c.setBorder(BorderFactory.createEmptyBorder(0, xOffset, 0, 0));
-                Dimension size = new Dimension(width, TILE_HEIGHT);
-                c.setPreferredSize(size);
-                c.setMaximumSize(size);
+                int height = Math.max(UIConstants.MIN_TILE_HEIGHT, TILE_HEIGHT);
+                c.setBounds(xOffset, y, width, height);
                 add(c);
-                add(Box.createVerticalStrut(2));
+                y += height + gutter;
             }
 
             revalidate();
