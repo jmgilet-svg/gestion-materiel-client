@@ -1,6 +1,6 @@
 package com.materiel.client.view.planning;
 
-import com.materiel.client.view.planning.layout.SimpleTimeGridModel;
+import com.materiel.client.view.planning.layout.DefaultTimeGridModel;
 import com.materiel.client.view.planning.layout.TimeGridModel;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 public class HeaderAlignmentTest {
     @Test
     void headerAndBoardShareSameModel() {
-        TimeGridModel model = new SimpleTimeGridModel(100);
+        TimeGridModel model = new DefaultTimeGridModel(100);
         TimelineHeader header = new TimelineHeader(model);
         PlanningBoard board = new PlanningBoard();
         board.setTimeGridModel(model);

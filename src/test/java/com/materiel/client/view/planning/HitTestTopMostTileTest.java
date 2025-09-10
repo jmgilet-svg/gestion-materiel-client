@@ -1,7 +1,7 @@
 package com.materiel.client.view.planning;
 
 import com.materiel.client.model.Intervention;
-import com.materiel.client.view.planning.layout.SimpleTimeGridModel;
+import com.materiel.client.view.planning.layout.DefaultTimeGridModel;
 import com.materiel.client.view.planning.layout.TimeGridModel;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ public class HitTestTopMostTileTest {
     @Test
     void pickReturnsTopMostTile() {
         PlanningBoard board = new PlanningBoard();
-        board.setTimeGridModel(new SimpleTimeGridModel(100));
+        board.setTimeGridModel(new DefaultTimeGridModel(100));
         Intervention bottom = new Intervention();
         bottom.setId(1L);
         Intervention top = new Intervention();

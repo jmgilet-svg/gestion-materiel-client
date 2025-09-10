@@ -3,6 +3,7 @@ package com.materiel.client.view.planning.layout;
 import com.materiel.client.model.Intervention;
 import com.materiel.client.view.ui.UIConstants;
 
+import java.awt.Rectangle;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -78,7 +79,18 @@ public final class LaneLayout {
             int count = Math.min(colsPerTrack, laneCount - track * colsPerTrack);
             result.put(e.getKey(), new Lane(index, count, track, tracks));
         }
-        return result;
+
+    /**
+     * Compute pixel bounds of a tile using the provided grid model and lane info.
+     */
+    public static Rectangle computeTileBounds(
+            Intervention intervention, Lane lane, TimeGridModel grid,
+            int rowY, LocalDateTime start, LocalDateTime end) {
+        int x1 = grid.timeToX(start);
+        int x2 = grid.timeToX(end);
+        int y = rowY + lane.track * (UIConstants.ROW_BASE_HEIGHT + UIConstants.TRACK_V_GUTTER);
+        int h = Math.max(UIConstants.MIN_TILE_HEIGHT, UIConstants.ROW_BASE_HEIGHT - 1);
+        return new Rectangle(Math.min(x1, x2), y, Math.max(1, Math.abs(x2 - x1)), h);
     }
 
     /**
@@ -87,7 +99,8 @@ public final class LaneLayout {
      */
     public static int computeRowHeight(int laneCount, int rowUsableWidth) {
         int tracks = Math.max(1,
-                (int) Math.ceil((laneCount * 1.0 * UIConstants.MIN_TILE_WIDTH) / rowUsableWidth));
+                (int) Math.ceil((laneCount * 1.0 * UIConstants.MIN_TILE_WIDTH) /
+                        Math.max(1, rowUsableWidth)));
         return UIConstants.ROW_BASE_HEIGHT * tracks + UIConstants.TRACK_V_GUTTER * (tracks - 1);
     }
 }
