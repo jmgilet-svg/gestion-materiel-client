@@ -29,4 +29,17 @@ public class DocumentLine {
     public void setRemisePct(BigDecimal remisePct) { this.remisePct = remisePct; }
     public BigDecimal getTvaPct() { return tvaPct; }
     public void setTvaPct(BigDecimal tvaPct) { this.tvaPct = tvaPct; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DocumentLine that = (DocumentLine) o;
+        return java.util.Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(id);
+    }
 }

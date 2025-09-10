@@ -4,6 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
@@ -12,6 +13,9 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -19,6 +23,9 @@ import javax.swing.SwingUtilities;
 import com.materiel.client.config.AppConfig;
 import com.materiel.client.controller.EventBus;
 import com.materiel.client.controller.events.MenuSelectionEvent;
+import com.materiel.client.view.commande.OrdersPanel;
+import com.materiel.client.view.bl.DeliveryNotesPanel;
+import com.materiel.client.view.facture.InvoicesPanel;
 import com.materiel.client.view.components.SideMenuPanel;
 import com.materiel.client.view.components.StatusBarPanel;
 import com.materiel.client.view.devis.DevisListPanel;
@@ -34,6 +41,9 @@ public class MainFrame extends JFrame {
     private SideMenuPanel sideMenuPanel;
     private JPanel contentPanel;
     private StatusBarPanel statusBarPanel;
+    private OrdersPanel ordersPanel;
+    private DeliveryNotesPanel deliveryNotesPanel;
+    private InvoicesPanel invoicesPanel;
     
     // Panels de contenu
     private PlanningPanel planningPanel;
@@ -43,7 +53,7 @@ public class MainFrame extends JFrame {
     // TODO: Ajouter autres panels (Commandes, BL, Factures)
     
     public MainFrame() {
-        System.out.println("FIX_WRAP_AND_ALIGN_APPLIED");
+        System.out.println("PATCH_DOC_FLOW_APPLIED");
         initComponents();
         setupFrame();
         setupEventListeners();
@@ -58,20 +68,29 @@ public class MainFrame extends JFrame {
         
         // Layout principal
         setLayout(new BorderLayout());
-        
+
+        // Bandeau de développement en haut
+        JPanel devBanner = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        devBanner.setBackground(Color.decode("#FFF7C2"));
+        devBanner.add(new JLabel("DOC FLOW & LINES ENABLED"));
+        add(devBanner, BorderLayout.NORTH);
+
         // Menu latéral
         sideMenuPanel = new SideMenuPanel();
         add(sideMenuPanel, BorderLayout.WEST);
-        
+
         // Zone de contenu central
         contentPanel = new JPanel(new CardLayout());
         contentPanel.setBackground(Color.decode("#F8FAFC"));
         add(contentPanel, BorderLayout.CENTER);
-        
+
         // Barre de statut
         statusBarPanel = new StatusBarPanel();
         add(statusBarPanel, BorderLayout.SOUTH);
-        
+
+        // Barre de menus
+        initMenuBar();
+
         // Initialiser les panels de contenu
         initContentPanels();
     }
@@ -81,14 +100,46 @@ public class MainFrame extends JFrame {
         devisListPanel = new DevisListPanel();
         clientListPanel = new ClientListPanel();
         resourceListPanel = new ResourceListPanel();
-        
+        ordersPanel = new OrdersPanel();
+        deliveryNotesPanel = new DeliveryNotesPanel();
+        invoicesPanel = new InvoicesPanel();
+
         contentPanel.add(planningPanel, "PLANNING");
         contentPanel.add(devisListPanel, "DEVIS");
         contentPanel.add(clientListPanel, "CLIENTS");
         contentPanel.add(resourceListPanel, "RESSOURCES");
-        // TODO: Ajouter autres panels
+        contentPanel.add(ordersPanel, "COMMANDES");
+        contentPanel.add(deliveryNotesPanel, "BONS_LIVRAISON");
+        contentPanel.add(invoicesPanel, "FACTURES");
     }
-    
+
+    private void initMenuBar() {
+        JMenuBar bar = new JMenuBar();
+
+        JMenu ventes = new JMenu("Ventes");
+        JMenuItem devisItem = new JMenuItem("Devis");
+        devisItem.addActionListener(e -> showPanel("DEVIS"));
+        JMenuItem cmdItem = new JMenuItem("Commandes");
+        cmdItem.addActionListener(e -> showPanel("COMMANDES"));
+        JMenuItem blItem = new JMenuItem("Bons de livraison");
+        blItem.addActionListener(e -> showPanel("BONS_LIVRAISON"));
+        JMenuItem facItem = new JMenuItem("Factures");
+        facItem.addActionListener(e -> showPanel("FACTURES"));
+        ventes.add(devisItem);
+        ventes.add(cmdItem);
+        ventes.add(blItem);
+        ventes.add(facItem);
+
+        JMenu debug = new JMenu("Debug");
+        JMenuItem stateItem = new JMenuItem("Afficher état patch");
+        stateItem.addActionListener(e -> JOptionPane.showMessageDialog(this, "PATCH_DOC_FLOW_APPLIED"));
+        debug.add(stateItem);
+
+        bar.add(ventes);
+        bar.add(debug);
+        setJMenuBar(bar);
+    }
+
     private void setupFrame() {
         // Taille et position
         setSize(1400, 900);
@@ -126,16 +177,13 @@ public class MainFrame extends JFrame {
                 devisListPanel.refreshData();
                 break;
             case "COMMANDES":
-                // TODO: Implémenter
-                showNotImplementedMessage("Gestion des Commandes");
+                cardLayout.show(contentPanel, "COMMANDES");
                 break;
             case "BONS_LIVRAISON":
-                // TODO: Implémenter
-                showNotImplementedMessage("Gestion des Bons de Livraison");
+                cardLayout.show(contentPanel, "BONS_LIVRAISON");
                 break;
             case "FACTURES":
-                // TODO: Implémenter
-                showNotImplementedMessage("Gestion des Factures");
+                cardLayout.show(contentPanel, "FACTURES");
                 break;
             case "CLIENTS":
                 cardLayout.show(contentPanel, "CLIENTS");
@@ -220,6 +268,16 @@ public class MainFrame extends JFrame {
      */
     public void navigateToPanel(String panelName) {
         showPanel(panelName);
+    }
+
+    /**
+     * Affiche dynamiquement un panel passé en paramètre.
+     */
+    public void showPanel(javax.swing.JComponent panel) {
+        CardLayout cardLayout = (CardLayout) contentPanel.getLayout();
+        String name = "DYNAMIC_" + System.identityHashCode(panel);
+        contentPanel.add(panel, name);
+        cardLayout.show(contentPanel, name);
     }
     
     /**
