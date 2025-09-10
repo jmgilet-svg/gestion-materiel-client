@@ -178,12 +178,15 @@ public class MainFrame extends JFrame {
                 break;
             case "COMMANDES":
                 cardLayout.show(contentPanel, "COMMANDES");
+                ordersPanel.refreshData();
                 break;
             case "BONS_LIVRAISON":
                 cardLayout.show(contentPanel, "BONS_LIVRAISON");
+                deliveryNotesPanel.refreshData();
                 break;
             case "FACTURES":
                 cardLayout.show(contentPanel, "FACTURES");
+                invoicesPanel.refreshData();
                 break;
             case "CLIENTS":
                 cardLayout.show(contentPanel, "CLIENTS");

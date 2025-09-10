@@ -11,6 +11,12 @@ import com.materiel.client.service.impl.MockInterventionService;
 import com.materiel.client.service.impl.MockResourceService;
 import com.materiel.client.service.impl.MockCommandeService;
 import com.materiel.client.service.impl.MockBonLivraisonService;
+import com.materiel.client.mock.OrderServiceMock;
+import com.materiel.client.mock.DeliveryNoteServiceMock;
+import com.materiel.client.mock.InvoiceServiceMock;
+import com.materiel.client.mock.SequenceServiceMock;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Factory pour créer les services selon le mode configuré
@@ -23,6 +29,10 @@ public class ServiceFactory {
     private static ClientService clientService;
     private static CommandeService commandeService;
     private static BonLivraisonService bonLivraisonService;
+    private static OrderService orderService;
+    private static DeliveryNoteService deliveryNoteService;
+    private static InvoiceService invoiceService;
+    private static SequenceService sequenceService;
     
     public static ResourceService getResourceService() {
         if (resourceService == null) {
@@ -97,6 +107,54 @@ public class ServiceFactory {
         }
         return bonLivraisonService;
     }
+
+    private static Path dataDir() {
+        return Paths.get(System.getProperty("user.home"), ".gestion-materiel", "data");
+    }
+
+    public static SequenceService getSequenceService() {
+        if (sequenceService == null) {
+            sequenceService = new SequenceServiceMock(dataDir());
+        }
+        return sequenceService;
+    }
+
+    public static OrderService getOrderService() {
+        if (orderService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                // TODO: Api implementation
+                orderService = new OrderServiceMock(dataDir(), getSequenceService());
+            } else {
+                orderService = new OrderServiceMock(dataDir(), getSequenceService());
+            }
+        }
+        return orderService;
+    }
+
+    public static DeliveryNoteService getDeliveryNoteService() {
+        if (deliveryNoteService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                deliveryNoteService = new DeliveryNoteServiceMock(dataDir(), getSequenceService());
+            } else {
+                deliveryNoteService = new DeliveryNoteServiceMock(dataDir(), getSequenceService());
+            }
+        }
+        return deliveryNoteService;
+    }
+
+    public static InvoiceService getInvoiceService() {
+        if (invoiceService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                invoiceService = new InvoiceServiceMock(dataDir(), getSequenceService());
+            } else {
+                invoiceService = new InvoiceServiceMock(dataDir(), getSequenceService());
+            }
+        }
+        return invoiceService;
+    }
     
     /**
      * Force la recréation des services (utile lors du changement de mode)
@@ -108,5 +166,9 @@ public class ServiceFactory {
         clientService = null;
         commandeService = null;
         bonLivraisonService = null;
+        orderService = null;
+        deliveryNoteService = null;
+        invoiceService = null;
+        sequenceService = null;
     }
 }

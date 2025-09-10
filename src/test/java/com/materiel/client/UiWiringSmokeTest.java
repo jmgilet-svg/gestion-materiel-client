@@ -24,11 +24,11 @@ public class UiWiringSmokeTest {
         assertNotNull(findMenu(bar, "Debug"));
 
         frame.navigateToPanel("COMMANDES");
-        assertTrue(hasWiredOk(frame));
+        assertTrue(hasTableWithRows(frame));
         frame.navigateToPanel("BONS_LIVRAISON");
-        assertTrue(hasWiredOk(frame));
+        assertTrue(hasTableWithRows(frame));
         frame.navigateToPanel("FACTURES");
-        assertTrue(hasWiredOk(frame));
+        assertTrue(hasTableWithRows(frame));
         frame.dispose();
     }
 
@@ -40,12 +40,12 @@ public class UiWiringSmokeTest {
         return null;
     }
 
-    private boolean hasWiredOk(Container c) {
-        if (c instanceof JLabel) {
-            return "WIRED_OK".equals(((JLabel)c).getText());
+    private boolean hasTableWithRows(Container c) {
+        if (c instanceof JTable) {
+            return ((JTable)c).getRowCount() > 0;
         }
         for (Component comp : c.getComponents()) {
-            if (comp instanceof Container && hasWiredOk((Container) comp)) {
+            if (comp instanceof Container && hasTableWithRows((Container) comp)) {
                 return true;
             }
         }

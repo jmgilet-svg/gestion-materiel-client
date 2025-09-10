@@ -7,6 +7,7 @@ import com.materiel.client.service.SequenceService;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.math.BigDecimal;
 
 /**
  * Implémentation mock du service de commandes avec persistance JSON.
@@ -20,6 +21,16 @@ public class OrderServiceMock implements OrderService {
         this.store = new JsonStore<>(dataDir.resolve("orders.json"), Order[].class);
         this.sequenceService = sequenceService;
         this.cache = store.load();
+        if (this.cache.isEmpty()) {
+            Order sample = new Order();
+            sample.setCustomerId(UUID.randomUUID());
+            sample.setCustomerName("Client démo");
+            sample.setLines(List.of(
+                new DocumentLine(UUID.randomUUID(), "Prod1", new BigDecimal("1"), "u", new BigDecimal("100"), BigDecimal.ZERO, new BigDecimal("20")),
+                new DocumentLine(UUID.randomUUID(), "Prod2", new BigDecimal("2"), "u", new BigDecimal("50"), BigDecimal.ZERO, new BigDecimal("20"))
+            ));
+            create(sample);
+        }
     }
 
     @Override
