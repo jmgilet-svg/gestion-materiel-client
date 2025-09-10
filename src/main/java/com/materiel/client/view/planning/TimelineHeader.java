@@ -15,8 +15,7 @@ import java.util.Locale;
 
 import javax.swing.JComponent;
 
-import com.materiel.client.view.planning.layout.TimeGridModel;
-import com.materiel.client.view.ui.UIConstants;
+import com.materiel.client.util.UIConstants;
 
 /** Header displaying day columns aligned with the planning grid. */
 public final class TimelineHeader extends JComponent {
