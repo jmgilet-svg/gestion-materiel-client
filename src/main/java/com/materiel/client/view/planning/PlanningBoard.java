@@ -4,8 +4,8 @@ import com.materiel.client.model.Intervention;
 import com.materiel.client.service.InterventionService;
 import com.materiel.client.service.ServiceFactory;
 import com.materiel.client.view.planning.layout.LaneLayout;
-import com.materiel.client.view.planning.layout.TimeScaleModel;
 import com.materiel.client.view.planning.UIConstants;
+import com.materiel.client.view.planning.layout.TimeGridModel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +25,7 @@ public class PlanningBoard extends JPanel {
     private boolean multiSelectionEnabled = false;
     private final Set<Long> selectedIds = new HashSet<>();
     private Rectangle selectionRect;
-    private TimeScaleModel scale;
+    private TimeGridModel gridModel;
     private final List<Map.Entry<Intervention, Rectangle>> tileRects = new ArrayList<>();
     private final List<Integer> rowLaneCounts = new ArrayList<>();
 
@@ -111,14 +111,19 @@ public class PlanningBoard extends JPanel {
         this.scale = model;
         revalidate();
         repaint();
+      
+    /** Set shared time grid model. */
+    public void setTimeGridModel(TimeGridModel model) {
+        this.gridModel = model;
+        repaint();
     }
 
-    /** Delegated column boundaries from model. */
-    public int[] getColumnXs(LocalDate day) {
-        return scale != null ? scale.getColumnXs(day) : new int[0];
+    /** Access to current grid model, mainly for tests. */
+    public TimeGridModel getTimeGridModel() {
+        return gridModel;
     }
 
-    /** Update cached tile bounds in drawing order. */
+    /** Update cached tile bounds and z-order. */
     public void setTileBounds(Map<Intervention, Rectangle> bounds) {
         tileRects.clear();
         tileRects.addAll(bounds.entrySet());
@@ -169,13 +174,14 @@ public class PlanningBoard extends JPanel {
         return new Dimension(width, height);
     }
 
-    /** Hit test tiles from top-most to bottom. */
+    /** Hit test tiles from top-most to bottom using z-order. */
     public Optional<Intervention> pickTileAt(Point p) {
-        ListIterator<Map.Entry<Intervention, Rectangle>> it = tileRects.listIterator(tileRects.size());
+        ListIterator<Intervention> it = zOrder.listIterator(zOrder.size());
         while (it.hasPrevious()) {
-            Map.Entry<Intervention, Rectangle> e = it.previous();
-            if (e.getValue().contains(p)) {
-                return Optional.of(e.getKey());
+            Intervention i = it.previous();
+            Rectangle r = tileBounds.get(i);
+            if (r != null && r.contains(p)) {
+                return Optional.of(i);
             }
         }
         return Optional.empty();
@@ -209,6 +215,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mousePressed(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (multiSelectionEnabled && SwingUtilities.isLeftMouseButton(e)) {
                 anchor = e.getPoint();
                 selectionRect = new Rectangle(anchor);
@@ -217,6 +224,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseDragged(MouseEvent e) {
+            pickTileAt(e.getPoint());
             if (anchor != null) {
                 selectionRect.setBounds(Math.min(anchor.x, e.getX()), Math.min(anchor.y, e.getY()),
                         Math.abs(anchor.x - e.getX()), Math.abs(anchor.y - e.getY()));
@@ -226,6 +234,7 @@ public class PlanningBoard extends JPanel {
 
         @Override
         public void mouseReleased(MouseEvent e) {
+            pickTileAt(e.getPoint());
             anchor = null;
             selectionRect = null;
             repaint();
@@ -235,13 +244,20 @@ public class PlanningBoard extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        if (gridModel != null) {
+            g2.setColor(Color.LIGHT_GRAY);
+            int[] xs = gridModel.getDayColumnXs(LocalDate.now());
+            for (int x : xs) {
+                g2.drawLine(x, 0, x, getHeight());
+            }
+        }
         if (selectionRect != null) {
-            Graphics2D g2 = (Graphics2D) g.create();
             g2.setColor(new Color(59, 130, 246, 80));
             g2.fill(selectionRect);
             g2.setColor(new Color(59, 130, 246));
             g2.draw(selectionRect);
-            g2.dispose();
         }
+        g2.dispose();
     }
 }
