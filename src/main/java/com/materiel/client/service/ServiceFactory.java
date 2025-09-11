@@ -5,18 +5,22 @@ import com.materiel.client.service.impl.ApiClientService;
 import com.materiel.client.service.impl.ApiDevisService;
 import com.materiel.client.service.impl.ApiInterventionService;
 import com.materiel.client.service.impl.ApiResourceService;
+import com.materiel.client.service.impl.backend.QuoteServiceBackend;
 import com.materiel.client.service.impl.MockClientService;
 import com.materiel.client.service.impl.MockDevisService;
 import com.materiel.client.service.impl.MockInterventionService;
 import com.materiel.client.service.impl.MockResourceService;
 import com.materiel.client.service.impl.MockCommandeService;
 import com.materiel.client.service.impl.MockBonLivraisonService;
+import com.materiel.client.mock.QuoteServiceMock;
 import com.materiel.client.mock.OrderServiceMock;
 import com.materiel.client.mock.DeliveryNoteServiceMock;
 import com.materiel.client.mock.InvoiceServiceMock;
 import com.materiel.client.mock.SequenceServiceMock;
+import com.materiel.client.net.BackendTransport;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import com.materiel.client.service.QuoteService;
 
 /**
  * Factory pour créer les services selon le mode configuré
@@ -33,6 +37,7 @@ public class ServiceFactory {
     private static DeliveryNoteService deliveryNoteService;
     private static InvoiceService invoiceService;
     private static SequenceService sequenceService;
+    private static QuoteService quoteService;
     
     public static ResourceService getResourceService() {
         if (resourceService == null) {
@@ -80,6 +85,19 @@ public class ServiceFactory {
             }
         }
         return clientService;
+    }
+
+    public static QuoteService getQuoteService() {
+        if (quoteService == null) {
+            AppConfig config = AppConfig.getInstance();
+            if (config.isBackendMode()) {
+                BackendTransport transport = new BackendTransport(config);
+                quoteService = new QuoteServiceBackend(transport.getApiClient());
+            } else {
+                quoteService = new QuoteServiceMock(dataDir());
+            }
+        }
+        return quoteService;
     }
     
     public static CommandeService getCommandeService() {
@@ -170,5 +188,6 @@ public class ServiceFactory {
         deliveryNoteService = null;
         invoiceService = null;
         sequenceService = null;
+        quoteService = null;
     }
 }
