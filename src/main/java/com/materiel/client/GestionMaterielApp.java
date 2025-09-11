@@ -17,6 +17,7 @@ public class GestionMaterielApp {
     
     public static void main(String[] args) {
         System.out.println("PATCH_DOC_FLOW_APPLIED");
+        System.out.println("API_WIRING_OK");
         // Configuration du Look & Feel FlatLaf
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());

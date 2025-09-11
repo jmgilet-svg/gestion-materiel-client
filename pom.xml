@@ -50,6 +50,13 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+
+        <!-- HTTP client -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
         
         <!-- Logging -->
         <dependency>
@@ -92,6 +99,13 @@
             <version>3.17.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <version>2.35.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <build>
@@ -110,6 +124,34 @@
                 </configuration>
             </plugin>
             
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.5.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/openapi/gestion-materiel-v1.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <dateLibrary>java8</dateLibrary>
+                            <serializationLibrary>jackson</serializationLibrary>
+                            <apiPackage>com.materiel.client.backend.api</apiPackage>
+                            <invokerPackage>com.materiel.client.backend.invoker</invokerPackage>
+                            <modelPackage>com.materiel.client.backend.model</modelPackage>
+                            <output>${project.build.directory}/generated-sources/openapi</output>
+                            <configOptions>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                            </configOptions>
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
 
         <resources>

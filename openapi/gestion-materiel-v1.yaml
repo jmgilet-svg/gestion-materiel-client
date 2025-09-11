@@ -1,0 +1,145 @@
+openapi: 3.0.1
+info:
+  title: Gestion Materiel API
+  version: 1.0.0
+servers:
+  - url: http://localhost
+paths:
+  /api/v1/quotes:
+    get:
+      operationId: listQuotes
+      responses:
+        '200':
+          description: List quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quote'
+    post:
+      operationId: createQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+  /api/v1/quotes/{id}:
+    get:
+      operationId: getQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quote by id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '404':
+          description: Not found
+    put:
+      operationId: updateQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '404':
+          description: Not found
+    delete:
+      operationId: deleteQuote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+components:
+  schemas:
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        date:
+          type: string
+          format: date
+        customerId:
+          type: string
+          format: uuid
+        customerName:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentLine'
+        totalHT:
+          type: number
+        totalTVA:
+          type: number
+        totalTTC:
+          type: number
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - SENT
+            - ACCEPTED
+            - REFUSED
+            - EXPIRED
+        notes:
+          type: string
+    DocumentLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        designation:
+          type: string
+        unite:
+          type: string
+        quantite:
+          type: number
+        prixUnitaireHT:
+          type: number
+        remisePct:
+          type: number
+        tvaPct:
+          type: number
